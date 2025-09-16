@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Edit, AlertTriangle, TreePine, Flame, Building2 } from "lucide-react";
+import { generateOccurrencePDF } from "@/utils/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 
 interface Occurrence {
   id: string;
@@ -56,10 +58,42 @@ const statusColors = {
 
 export function OccurrenceDetails({ occurrence, onBack, onEdit }: OccurrenceDetailsProps) {
   const CategoryIcon = categoryIcons[occurrence.category];
+  const { toast } = useToast();
 
-  const handleExportPDF = () => {
-    // Simular exportação para PDF
-    alert("Funcionalidade de exportação para PDF será implementada.");
+  const handleExportPDF = async () => {
+    try {
+      const occurrenceForPDF = {
+        id: occurrence.id,
+        ra: occurrence.ra,
+        dateTime: occurrence.dateTime,
+        category: categoryLabels[occurrence.category],
+        status: statusLabels[occurrence.status],
+        address: occurrence.address,
+        requester: occurrence.requester,
+        description: occurrence.description,
+        expandedData: {
+          "Número SSPDS": occurrence.sspdsNumber || "Não informado",
+          "Telefone": occurrence.phone || "Não informado",
+          "Latitude": occurrence.latitude || "Não informado",
+          "Longitude": occurrence.longitude || "Não informado",
+          "Relato Detalhado": occurrence.detailedReport || "Não informado",
+          "Observações": occurrence.observations || "Não informado",
+          "Agentes Responsáveis": occurrence.responsibleAgents || "Não informado"
+        }
+      };
+      
+      await generateOccurrencePDF(occurrenceForPDF);
+      toast({
+        title: "PDF gerado com sucesso",
+        description: "O arquivo PDF foi baixado.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

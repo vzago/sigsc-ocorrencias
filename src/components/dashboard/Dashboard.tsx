@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Eye, FileText, AlertTriangle, Flame, TreePine, Building2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportsSection } from "@/components/reports/ReportsSection";
 
 interface Occurrence {
   id: string;
@@ -151,116 +153,129 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence }: DashboardProps)
         </Card>
       </div>
 
-      {/* Actions and Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Registro de Ocorrências</CardTitle>
-              <CardDescription>Gerencie todas as ocorrências registradas</CardDescription>
-            </div>
-            <Button 
-              onClick={onNewOccurrence}
-              className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Ocorrência
-            </Button>
-          </div>
-        </CardHeader>
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="dashboard">Painel de Ocorrências</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+        </TabsList>
         
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Buscar por R.A., endereço ou solicitante..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Actions and Filters */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Registro de Ocorrências</CardTitle>
+                  <CardDescription>Gerencie todas as ocorrências registradas</CardDescription>
+                </div>
+                <Button 
+                  onClick={onNewOccurrence}
+                  className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Ocorrência
+                </Button>
               </div>
-            </div>
+            </CardHeader>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="aberta">Aberta</SelectItem>
-                <SelectItem value="andamento">Em Andamento</SelectItem>
-                <SelectItem value="fechada">Fechada</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filtrar por categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as categorias</SelectItem>
-                <SelectItem value="vistoria_ambiental">Vistoria Ambiental</SelectItem>
-                <SelectItem value="risco_vegetacao">Risco - Vegetação/Árvore</SelectItem>
-                <SelectItem value="incendio_vegetacao">Incêndio em Vegetação</SelectItem>
-                <SelectItem value="outras">Outras Ocorrências</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Buscar por R.A., endereço ou solicitante..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="aberta">Aberta</SelectItem>
+                    <SelectItem value="andamento">Em Andamento</SelectItem>
+                    <SelectItem value="fechada">Fechada</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filtrar por categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    <SelectItem value="vistoria_ambiental">Vistoria Ambiental</SelectItem>
+                    <SelectItem value="risco_vegetacao">Risco - Vegetação/Árvore</SelectItem>
+                    <SelectItem value="incendio_vegetacao">Incêndio em Vegetação</SelectItem>
+                    <SelectItem value="outras">Outras Ocorrências</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Occurrences List */}
-          <div className="space-y-4">
-            {filteredOccurrences.map((occurrence) => {
-              const CategoryIcon = categoryIcons[occurrence.category];
-              return (
-                <Card key={occurrence.id} className="hover:shadow-card transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center justify-center w-10 h-10 bg-muted rounded-lg">
-                          <CategoryIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">R.A. {occurrence.ra}</span>
-                            <Badge variant={statusColors[occurrence.status]}>
-                              {statusLabels[occurrence.status]}
-                            </Badge>
+              {/* Occurrences List */}
+              <div className="space-y-4">
+                {filteredOccurrences.map((occurrence) => {
+                  const CategoryIcon = categoryIcons[occurrence.category];
+                  return (
+                    <Card key={occurrence.id} className="hover:shadow-card transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center justify-center w-10 h-10 bg-muted rounded-lg">
+                              <CategoryIcon className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">R.A. {occurrence.ra}</span>
+                                <Badge variant={statusColors[occurrence.status]}>
+                                  {statusLabels[occurrence.status]}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{occurrence.dateTime}</p>
+                              <p className="text-sm font-medium">{categoryLabels[occurrence.category]}</p>
+                              <p className="text-sm text-muted-foreground">{occurrence.address}</p>
+                              <p className="text-sm text-muted-foreground">Solicitante: {occurrence.requester}</p>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground">{occurrence.dateTime}</p>
-                          <p className="text-sm font-medium">{categoryLabels[occurrence.category]}</p>
-                          <p className="text-sm text-muted-foreground">{occurrence.address}</p>
-                          <p className="text-sm text-muted-foreground">Solicitante: {occurrence.requester}</p>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onViewOccurrence(occurrence)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Visualizar
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewOccurrence(occurrence)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Visualizar
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            
-            {filteredOccurrences.length === 0 && (
-              <div className="text-center py-8">
-                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nenhuma ocorrência encontrada</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                
+                {filteredOccurrences.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Nenhuma ocorrência encontrada</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="reports">
+          <ReportsSection occurrences={filteredOccurrences} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
