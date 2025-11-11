@@ -6,17 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { CreateOccurrenceDto, OccurrenceCategory, OriginType } from "@/types/occurrence.types";
+import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence } from "@/types/occurrence.types";
 
 interface OccurrenceFormProps {
   onBack: () => void;
-  onSave: (data: any) => void;
+  onSave: (data: Occurrence) => void;
 }
 
 export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Cabeçalho
@@ -171,7 +172,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
           : undefined,
         resources: formData.vehicles.length > 0 || formData.materials
           ? [
-              ...formData.vehicles.map((vehicle: any) => ({ vehicle: vehicle.name || vehicle })),
+              ...formData.vehicles.map((vehicle: { name?: string } | string) => ({ vehicle: typeof vehicle === 'string' ? vehicle : (vehicle.name || '') })),
               ...(formData.materials ? [{ materials: formData.materials }] : [])
             ]
           : undefined,
@@ -188,10 +189,11 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
       });
 
       onSave(savedOccurrence);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível salvar a ocorrência. Tente novamente.";
       toast({
         title: "Erro ao salvar",
-        description: error.message || "Não foi possível salvar a ocorrência. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -199,7 +201,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
     }
   };
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -227,44 +229,47 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={onBack} size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Nova Ocorrência</h1>
-            <p className="text-sm text-muted-foreground mt-1">Preencha os dados da ocorrência abaixo</p>
-          </div>
-        </div>
-      </div>
+      {/* Header e Progresso Fixos - Compacto */}
+      <Card className="sticky top-16 z-40 bg-card border-2 border-primary shadow-lg">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="outline" onClick={onBack} size="sm" className="shrink-0 h-8">
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              Voltar
+            </Button>
+            
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <FileText className="w-5 h-5 text-primary shrink-0" />
+              <h1 className="text-lg font-bold text-foreground truncate">Nova Ocorrência</h1>
+            </div>
 
-      {/* Progress Indicator */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">Progresso do formulário</span>
-            <span className="text-sm font-semibold text-primary">{formProgress}%</span>
-          </div>
-          <div className="w-full bg-background rounded-full h-2 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-primary to-primary-variant transition-all duration-300"
-              style={{ width: `${formProgress}%` }}
-            />
-          </div>
-          <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Campos obrigatórios: Data/Hora, Endereço, Solicitante, Categoria e Descrição</span>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse shrink-0"></div>
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Progresso:</span>
+                <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden border border-border min-w-[100px]">
+                  <div 
+                    className="h-full bg-gradient-to-r from-secondary to-primary transition-all duration-300"
+                    style={{ width: `${formProgress}%` }}
+                  />
+                </div>
+              </div>
+              <span className="text-sm font-bold text-primary bg-secondary/20 px-2 py-0.5 rounded border border-secondary/30 shrink-0">
+                {formProgress}%
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Cabeçalho */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Dados Gerais</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Dados Gerais
+            </CardTitle>
             <CardDescription>Informações básicas da ocorrência</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -313,9 +318,12 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Localização */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Localização</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Localização
+            </CardTitle>
             <CardDescription>Dados do local da ocorrência</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -402,9 +410,12 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Solicitante */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Dados do Solicitante</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Dados do Solicitante
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -446,9 +457,12 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Classificação */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Classificação da Ocorrência</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Classificação da Ocorrência
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -490,8 +504,11 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
 
             {/* Campos específicos por categoria */}
             {formData.category === "vistoria_ambiental" && (
-              <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
-                <h4 className="font-medium text-foreground">Dados da Vistoria Ambiental</h4>
+              <div className="space-y-4 p-4 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/5 rounded-lg border-2 border-primary/20">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-secondary rounded-full"></div>
+                  Dados da Vistoria Ambiental
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="areaType">Tipo de Área</Label>
@@ -541,9 +558,12 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Providências Adotadas */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Providências Adotadas</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Providências Adotadas
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
@@ -581,9 +601,12 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Relato Detalhado */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Relato e Observações</CardTitle>
+        <Card className="shadow-sm bg-card border border-border/50">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+              Relato e Observações
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -622,7 +645,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Botões de Ação */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/50">
           <Button type="button" variant="outline" onClick={onBack} size="lg">
             Cancelar
           </Button>
@@ -630,7 +653,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
             type="submit"
             disabled={isLoading || formProgress < 100}
             size="lg"
-            className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 shadow-md"
+            
           >
             <Save className="w-4 h-4 mr-2" />
             {isLoading ? "Salvando..." : "Salvar Ocorrência"}

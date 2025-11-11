@@ -87,10 +87,11 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
       if (onStatusChange) {
         onStatusChange(convertedOccurrence);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível atualizar o status da ocorrência.";
       toast({
         title: "Erro ao atualizar status",
-        description: error.message || "Não foi possível atualizar o status da ocorrência.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -136,80 +137,71 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
 
   return (
     <div className="space-y-6">
-      {/* Header Compacto */}
-      <Card className="shadow-sm border-l-4 border-l-primary">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-4 flex-1">
-              <Button variant="outline" onClick={onBack} size="sm" className="shrink-0">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg shrink-0">
-                  <CategoryIcon className="w-6 h-6 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-bold text-foreground truncate">R.A. {occurrence.ra}</h1>
-                  <p className="text-sm text-muted-foreground truncate">{categoryLabels[occurrence.category]}</p>
-                </div>
+      {/* Header Fixo e Compacto */}
+      <Card className="sticky top-16 z-40 bg-card border-2 border-primary shadow-lg">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="outline" onClick={onBack} size="sm" className="shrink-0 h-8">
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              Voltar
+            </Button>
+            
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CategoryIcon className="w-5 h-5 text-primary shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg font-bold text-foreground truncate">R.A. {occurrence.ra}</h1>
+                <p className="text-xs text-muted-foreground truncate">{categoryLabels[occurrence.category]}</p>
               </div>
             </div>
             
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:inline">Status:</span>
-                <Select 
-                  value={occurrence.status} 
-                  onValueChange={handleStatusChange}
-                  disabled={isUpdatingStatus}
-                >
-                  <SelectTrigger className="w-[140px] h-9 border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 shadow-none">
-                    <Badge variant={statusColors[occurrence.status]} className="w-full justify-between cursor-pointer">
-                      {statusLabels[occurrence.status]}
-                    </Badge>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aberta">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-destructive" />
-                        Aberta
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="andamento">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-warning" />
-                        Em Andamento
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="fechada">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-success" />
-                        Fechada
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Select 
+                value={occurrence.status} 
+                onValueChange={handleStatusChange}
+                disabled={isUpdatingStatus}
+              >
+                <SelectTrigger className="w-[120px] h-8 border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 shadow-none">
+                  <Badge variant={statusColors[occurrence.status]} className="w-full justify-between cursor-pointer text-xs">
+                    {statusLabels[occurrence.status]}
+                  </Badge>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aberta">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-destructive" />
+                      Aberta
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="andamento">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-warning" />
+                      Em Andamento
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="fechada">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-success" />
+                      Fechada
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               
-              <div className="flex items-center gap-2">
-                {onEdit && (
-                  <Button variant="outline" size="sm" onClick={() => onEdit(occurrence)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Editar</span>
-                  </Button>
-                )}
-                <Button 
-                  onClick={handleExportPDF}
-                  size="sm"
-                  className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 shadow-sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Exportar PDF</span>
-                  <span className="sm:hidden">PDF</span>
+              {onEdit && (
+                <Button variant="outline" size="sm" onClick={() => onEdit(occurrence)} className="h-8">
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Editar</span>
                 </Button>
-              </div>
+              )}
+              <Button 
+                onClick={handleExportPDF}
+                size="sm"
+                className="h-8 bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">Exportar PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </Button>
             </div>
           </div>
         </CardContent>

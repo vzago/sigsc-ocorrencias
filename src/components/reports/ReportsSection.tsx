@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,15 +64,7 @@ export const ReportsSection = () => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (startDate && endDate) {
-      loadOccurrences();
-    } else {
-      setOccurrences([]);
-    }
-  }, [startDate, endDate]);
-
-  const loadOccurrences = async () => {
+  const loadOccurrences = useCallback(async () => {
     if (!startDate || !endDate) return;
     
     setIsLoading(true);
@@ -86,16 +78,25 @@ export const ReportsSection = () => {
         ? response.data.map(convertApiOccurrence)
         : [];
       setOccurrences(convertedOccurrences);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar as ocorrências.";
       toast({
         title: "Erro ao carregar ocorrências",
-        description: error.message || "Não foi possível carregar as ocorrências.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [startDate, endDate, toast]);
+
+  useEffect(() => {
+    if (startDate && endDate) {
+      loadOccurrences();
+    } else {
+      setOccurrences([]);
+    }
+  }, [startDate, endDate, loadOccurrences]);
 
   // Memoize filtered occurrences to prevent infinite re-renders
   const filteredOccurrences = useMemo(() => {

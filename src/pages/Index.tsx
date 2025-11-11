@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { OccurrenceForm } from "@/components/forms/OccurrenceForm";
 import { OccurrenceDetails } from "@/components/occurrence/OccurrenceDetails";
-import { removeAuthToken } from "@/config/api.config";
+import { removeAuthToken, getAuthToken } from "@/config/api.config";
 import { occurrencesApi } from "@/services/occurrences.service";
+import { authApi } from "@/services/auth.service";
 import { Occurrence as ApiOccurrence } from "@/types/occurrence.types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -83,7 +84,25 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<View>("dashboard");
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const userData = await authApi.getCurrentUser();
+          setUser(userData);
+        } catch (error) {
+          removeAuthToken();
+        }
+      }
+      setIsLoadingAuth(false);
+    };
+
+    restoreSession();
+  }, []);
 
   const handleLogin = (user: User) => {
     setUser(user);
@@ -106,16 +125,17 @@ const Index = () => {
       const convertedOccurrence = convertApiOccurrenceToDetails(fullOccurrence);
       setSelectedOccurrence(convertedOccurrence);
       setCurrentView("view-occurrence");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar os detalhes da ocorrência.";
       toast({
         title: "Erro ao carregar ocorrência",
-        description: error.message || "Não foi possível carregar os detalhes da ocorrência.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  const handleSaveOccurrence = (data: any) => {
+  const handleSaveOccurrence = (data: ApiOccurrence) => {
     console.log("Ocorrência salva:", data);
     setRefreshTrigger(prev => prev + 1);
     setCurrentView("dashboard");
@@ -125,6 +145,17 @@ const Index = () => {
     setCurrentView("dashboard");
     setSelectedOccurrence(null);
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <LoginForm onLogin={handleLogin} />;

@@ -37,5 +37,15 @@ export class AuthService {
       },
     };
   }
+
+  async getProfile(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    };
+  }
 }
 

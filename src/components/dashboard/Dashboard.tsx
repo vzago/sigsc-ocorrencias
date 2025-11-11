@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ReportsSection } from "@/components/reports/ReportsSection";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { Occurrence as ApiOccurrence, OccurrenceStatus, OccurrenceCategory } from "@/types/occurrence.types";
+import { Occurrence as ApiOccurrence, OccurrenceStatus, OccurrenceCategory, FilterOccurrenceDto } from "@/types/occurrence.types";
 import { useToast } from "@/hooks/use-toast";
 
 interface Occurrence {
@@ -105,16 +105,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
   const [stats, setStats] = useState({ total: 0, aberta: 0, andamento: 0, fechada: 0 });
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadOccurrences();
-    loadStats();
-  }, [refreshTrigger]);
-
-  useEffect(() => {
-    loadOccurrences();
-  }, [statusFilter, categoryFilter, page, limit]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const [abertaRes, andamentoRes, fechadaRes, totalRes] = await Promise.all([
         occurrencesApi.getAll({ status: OccurrenceStatus.ABERTA, limit: 1 }),
@@ -132,12 +123,12 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
     }
-  };
+  }, []);
 
-  const loadOccurrences = async () => {
+  const loadOccurrences = useCallback(async () => {
     setIsLoading(true);
     try {
-      const filters: any = {
+      const filters: FilterOccurrenceDto = {
         page,
         limit,
       };
@@ -159,16 +150,26 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
       setOccurrences(convertedOccurrences);
       setTotal(response.total);
       setTotalPages(response.totalPages);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar as ocorrências.";
       toast({
         title: "Erro ao carregar ocorrências",
-        description: error.message || "Não foi possível carregar as ocorrências.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [statusFilter, categoryFilter, page, limit, searchTerm, toast]);
+
+  useEffect(() => {
+    loadOccurrences();
+    loadStats();
+  }, [refreshTrigger, loadOccurrences, loadStats]);
+
+  useEffect(() => {
+    loadOccurrences();
+  }, [loadOccurrences]);
 
   const handleSearch = () => {
     setPage(1);
