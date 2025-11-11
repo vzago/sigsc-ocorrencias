@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut } from "lucide-react";
+import Logo from "@/resources/Logo.svg";
 
 interface HeaderProps {
   user?: { name: string };
@@ -13,7 +14,7 @@ export function Header({ user, onLogout }: HeaderProps) {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-primary to-primary-variant rounded-lg">
-              <Shield className="w-6 h-6 text-primary-foreground" />
+              <img src={Logo} alt="Logo" className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">SiG-DC São Carlos</h1>
