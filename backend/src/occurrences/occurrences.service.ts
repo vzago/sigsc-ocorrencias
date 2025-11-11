@@ -40,24 +40,37 @@ export class OccurrencesService {
   }
 
   private toFirestore(data: any): any {
-    const firestoreData = { ...data };
-    
-    if (firestoreData.startDateTime && firestoreData.startDateTime instanceof Date) {
-      firestoreData.startDateTime = Timestamp.fromDate(firestoreData.startDateTime);
-    }
-    
-    if (firestoreData.endDateTime && firestoreData.endDateTime instanceof Date) {
-      firestoreData.endDateTime = Timestamp.fromDate(firestoreData.endDateTime);
-    }
+    const convertToPlainObject = (obj: any): any => {
+      if (obj === null || obj === undefined) {
+        return obj;
+      }
+      
+      if (obj instanceof Date) {
+        return Timestamp.fromDate(obj);
+      }
+      
+      if (Array.isArray(obj)) {
+        return obj.map(item => convertToPlainObject(item));
+      }
+      
+      if (typeof obj === 'object' && obj.constructor !== Object) {
+        return JSON.parse(JSON.stringify(obj));
+      }
+      
+      if (typeof obj === 'object') {
+        const plainObj: any = {};
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            plainObj[key] = convertToPlainObject(obj[key]);
+          }
+        }
+        return plainObj;
+      }
+      
+      return obj;
+    };
 
-    if (firestoreData.createdAt && firestoreData.createdAt instanceof Date) {
-      firestoreData.createdAt = Timestamp.fromDate(firestoreData.createdAt);
-    }
-
-    if (firestoreData.updatedAt && firestoreData.updatedAt instanceof Date) {
-      firestoreData.updatedAt = Timestamp.fromDate(firestoreData.updatedAt);
-    }
-
+    const firestoreData = convertToPlainObject(data);
     delete firestoreData.id;
     return firestoreData;
   }
@@ -88,14 +101,17 @@ export class OccurrencesService {
 
   async findAll(filters?: FilterOccurrenceDto): Promise<Occurrence[]> {
     let query: Query = this.collection;
+    let needsInMemorySort = false;
 
     if (filters) {
       if (filters.category) {
         query = query.where('category', '==', filters.category);
+        needsInMemorySort = true;
       }
 
       if (filters.status) {
         query = query.where('status', '==', filters.status);
+        needsInMemorySort = true;
       }
 
       if (filters.startDate) {
@@ -115,10 +131,31 @@ export class OccurrencesService {
       }
     }
 
-    query = query.orderBy('startDateTime', 'desc');
+    if (!needsInMemorySort) {
+      query = query.orderBy('startDateTime', 'desc');
+    }
 
     const snapshot = await query.get();
     let occurrences = snapshot.docs.map((doc) => this.toOccurrence(doc));
+
+    if (needsInMemorySort) {
+      occurrences.sort((a, b) => {
+        const getDateValue = (date: Date | Timestamp | string | undefined): number => {
+          if (!date) return 0;
+          if (date instanceof Date) {
+            return date.getTime();
+          }
+          if (date instanceof Timestamp) {
+            return date.toDate().getTime();
+          }
+          return new Date(date as string).getTime();
+        };
+        
+        const dateA = getDateValue(a.startDateTime);
+        const dateB = getDateValue(b.startDateTime);
+        return dateB - dateA;
+      });
+    }
 
     if (filters?.search) {
       const searchLower = filters.search.toLowerCase();
