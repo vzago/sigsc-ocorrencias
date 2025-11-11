@@ -54,23 +54,23 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md shadow-elegant">
-        <CardHeader className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+      <Card className="w-full max-w-md shadow-lg border-border">
+        <CardHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-primary-variant rounded-full">
+            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-primary-variant rounded-full shadow-md">
               <Shield className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">SiG-DC São Carlos</CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-2">
             Sistema de Registro Digital de Ocorrências da Defesa Civil
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="username" className="text-sm font-medium">Usuário</Label>
               <Input
                 id="username"
                 type="text"
@@ -78,11 +78,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Digite seu usuário"
                 required
+                className="h-11"
+                autoComplete="username"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -91,6 +93,8 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Digite sua senha"
                   required
+                  className="h-11 pr-10"
+                  autoComplete="current-password"
                 />
                 <Button
                   type="button"
@@ -98,11 +102,12 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -110,15 +115,15 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 transition-all duration-300"
+              className="w-full h-11 bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 transition-all duration-300 shadow-md"
               disabled={isLoading}
             >
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
           
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Faça login com suas credenciais
+          <div className="pt-4 text-center text-sm text-muted-foreground border-t">
+            Faça login com suas credenciais de acesso
           </div>
         </CardContent>
       </Card>

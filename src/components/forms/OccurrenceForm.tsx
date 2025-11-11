@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2 } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { occurrencesApi } from "@/services/occurrences.service";
+import { CreateOccurrenceDto, OccurrenceCategory, OriginType } from "@/types/occurrence.types";
 
 interface OccurrenceFormProps {
   onBack: () => void;
@@ -15,6 +17,7 @@ interface OccurrenceFormProps {
 }
 
 export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Cabeçalho
     sspdsNumber: "",
@@ -67,7 +70,19 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
     responsibleAgents: ""
   });
 
-  const { toast } = useToast();
+  const getFormProgress = () => {
+    const requiredFields = [
+      formData.startDateTime,
+      formData.address,
+      formData.requesterName,
+      formData.category,
+      formData.description
+    ];
+    const filledFields = requiredFields.filter(field => field && field.toString().trim() !== "").length;
+    return Math.round((filledFields / requiredFields.length) * 100);
+  };
+
+  const formProgress = getFormProgress();
 
   const origins = [
     "Processo",
@@ -99,7 +114,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
     "Ação Social"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.category || !formData.requesterName || !formData.address) {
@@ -111,24 +126,77 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
       return;
     }
 
-    // Gerar R.A. automático
-    const now = new Date();
-    const year = now.getFullYear();
-    const raNumber = `${year}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-    
-    const occurrenceData = {
-      ...formData,
-      raNumber,
-      startDateTime: formData.startDateTime || now.toISOString(),
-      id: Math.random().toString(36).substr(2, 9)
-    };
+    setIsLoading(true);
 
-    onSave(occurrenceData);
-    
-    toast({
-      title: "Sucesso",
-      description: `Ocorrência ${raNumber} registrada com sucesso!`,
-    });
+    try {
+      const now = new Date();
+      const startDateTime = formData.startDateTime 
+        ? new Date(formData.startDateTime).toISOString()
+        : now.toISOString();
+
+      const createDto: CreateOccurrenceDto = {
+        sspdsNumber: formData.sspdsNumber || undefined,
+        startDateTime,
+        endDateTime: formData.endDateTime ? new Date(formData.endDateTime).toISOString() : undefined,
+        origins: formData.origins.length > 0 ? formData.origins as OriginType[] : undefined,
+        cobradeCode: formData.cobradeCode || undefined,
+        isConfidential: formData.isConfidential,
+        category: formData.category as OccurrenceCategory,
+        subcategory: formData.subcategory || undefined,
+        description: formData.description,
+        areaType: formData.areaType || undefined,
+        affectedArea: formData.affectedArea || undefined,
+        temperature: formData.temperature || undefined,
+        humidity: formData.humidity || undefined,
+        hasWaterBody: formData.hasWaterBody,
+        impactType: formData.impactType || undefined,
+        impactMagnitude: formData.impactMagnitude || undefined,
+        requesterName: formData.requesterName,
+        institution: formData.institution || undefined,
+        phone: formData.phone || undefined,
+        location: {
+          address: formData.address,
+          number: formData.number || undefined,
+          neighborhood: formData.neighborhood || undefined,
+          reference: formData.reference || undefined,
+          latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+          altitude: formData.altitude ? parseFloat(formData.altitude) : undefined,
+        },
+        actions: formData.teamActions.length > 0 || formData.activatedOrganisms.length > 0
+          ? [
+              ...formData.teamActions.map(action => ({ teamAction: action })),
+              ...formData.activatedOrganisms.map(organism => ({ activatedOrganism: organism }))
+            ]
+          : undefined,
+        resources: formData.vehicles.length > 0 || formData.materials
+          ? [
+              ...formData.vehicles.map((vehicle: any) => ({ vehicle: vehicle.name || vehicle })),
+              ...(formData.materials ? [{ materials: formData.materials }] : [])
+            ]
+          : undefined,
+        detailedReport: formData.detailedReport || undefined,
+        observations: formData.observations || undefined,
+        responsibleAgents: formData.responsibleAgents || undefined,
+      };
+
+      const savedOccurrence = await occurrencesApi.create(createDto);
+      
+      toast({
+        title: "Sucesso",
+        description: `Ocorrência ${savedOccurrence.raNumber} registrada com sucesso!`,
+      });
+
+      onSave(savedOccurrence);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Não foi possível salvar a ocorrência. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateFormData = (field: string, value: any) => {
@@ -159,19 +227,44 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
-        <h1 className="text-2xl font-bold">Nova Ocorrência</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" onClick={onBack} size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Nova Ocorrência</h1>
+            <p className="text-sm text-muted-foreground mt-1">Preencha os dados da ocorrência abaixo</p>
+          </div>
+        </div>
       </div>
+
+      {/* Progress Indicator */}
+      <Card className="bg-muted/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">Progresso do formulário</span>
+            <span className="text-sm font-semibold text-primary">{formProgress}%</span>
+          </div>
+          <div className="w-full bg-background rounded-full h-2 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-primary-variant transition-all duration-300"
+              style={{ width: `${formProgress}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>Campos obrigatórios: Data/Hora, Endereço, Solicitante, Categoria e Descrição</span>
+          </div>
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Cabeçalho */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados Gerais</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Dados Gerais</CardTitle>
             <CardDescription>Informações básicas da ocorrência</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -183,31 +276,35 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.sspdsNumber}
                   onChange={(e) => updateFormData("sspdsNumber", e.target.value)}
                   placeholder="Ex: 2025-001"
+                  className="mt-1.5"
                 />
               </div>
               <div>
-                <Label htmlFor="startDateTime">Data/Hora Início *</Label>
+                <Label htmlFor="startDateTime">
+                  Data/Hora Início <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="startDateTime"
                   type="datetime-local"
                   value={formData.startDateTime}
                   onChange={(e) => updateFormData("startDateTime", e.target.value)}
                   required
+                  className="mt-1.5"
                 />
               </div>
             </div>
             
             <div>
-              <Label>Origem do Chamado</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+              <Label className="mb-2 block">Origem do Chamado</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                 {origins.map((origin) => (
-                  <div key={origin} className="flex items-center space-x-2">
+                  <div key={origin} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted transition-colors">
                     <Checkbox
                       id={origin}
                       checked={formData.origins.includes(origin)}
                       onCheckedChange={() => toggleArrayField("origins", origin)}
                     />
-                    <Label htmlFor={origin} className="text-sm">{origin}</Label>
+                    <Label htmlFor={origin} className="text-sm font-normal cursor-pointer">{origin}</Label>
                   </div>
                 ))}
               </div>
@@ -216,9 +313,9 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Localização */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Localização</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Localização</CardTitle>
             <CardDescription>Dados do local da ocorrência</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -230,6 +327,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.latitude}
                   onChange={(e) => updateFormData("latitude", e.target.value)}
                   placeholder="Ex: -22.0175"
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -239,6 +337,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.longitude}
                   onChange={(e) => updateFormData("longitude", e.target.value)}
                   placeholder="Ex: -47.8908"
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -248,19 +347,23 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.altitude}
                   onChange={(e) => updateFormData("altitude", e.target.value)}
                   placeholder="Ex: 856"
+                  className="mt-1.5"
                 />
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="address">Logradouro *</Label>
+                <Label htmlFor="address">
+                  Logradouro <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => updateFormData("address", e.target.value)}
                   placeholder="Ex: Rua das Flores"
                   required
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -270,6 +373,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.number}
                   onChange={(e) => updateFormData("number", e.target.value)}
                   placeholder="Ex: 123"
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -279,6 +383,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.neighborhood}
                   onChange={(e) => updateFormData("neighborhood", e.target.value)}
                   placeholder="Ex: Centro"
+                  className="mt-1.5"
                 />
               </div>
             </div>
@@ -290,26 +395,30 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                 value={formData.reference}
                 onChange={(e) => updateFormData("reference", e.target.value)}
                 placeholder="Ex: Próximo ao shopping"
+                className="mt-1.5"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Solicitante */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados do Solicitante</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Dados do Solicitante</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="requesterName">Nome do Solicitante *</Label>
+                <Label htmlFor="requesterName">
+                  Nome do Solicitante <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="requesterName"
                   value={formData.requesterName}
                   onChange={(e) => updateFormData("requesterName", e.target.value)}
                   placeholder="Nome completo"
                   required
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -319,6 +428,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                   value={formData.institution}
                   onChange={(e) => updateFormData("institution", e.target.value)}
                   placeholder="Ex: Prefeitura, Empresa, etc."
+                  className="mt-1.5"
                 />
               </div>
             </div>
@@ -329,21 +439,24 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                 value={formData.phone}
                 onChange={(e) => updateFormData("phone", e.target.value)}
                 placeholder="Ex: (16) 99999-9999"
+                className="mt-1.5"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Classificação */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Classificação da Ocorrência</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Classificação da Ocorrência</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="category">Categoria *</Label>
+              <Label htmlFor="category">
+                Categoria <span className="text-destructive">*</span>
+              </Label>
               <Select value={formData.category} onValueChange={(value) => updateFormData("category", value)}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -377,13 +490,13 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
 
             {/* Campos específicos por categoria */}
             {formData.category === "vistoria_ambiental" && (
-              <div className="space-y-4 p-4 bg-muted rounded-lg">
-                <h4 className="font-medium">Dados da Vistoria Ambiental</h4>
+              <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+                <h4 className="font-medium text-foreground">Dados da Vistoria Ambiental</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="areaType">Tipo de Área</Label>
                     <Select value={formData.areaType} onValueChange={(value) => updateFormData("areaType", value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5">
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -403,6 +516,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                       value={formData.affectedArea}
                       onChange={(e) => updateFormData("affectedArea", e.target.value)}
                       placeholder="Ex: 1000"
+                      className="mt-1.5"
                     />
                   </div>
                 </div>
@@ -410,52 +524,55 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
             )}
 
             <div>
-              <Label htmlFor="description">Descrição/Caracterização da Situação *</Label>
+              <Label htmlFor="description">
+                Descrição/Caracterização da Situação <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
                 placeholder="Descreva detalhadamente a situação..."
-                rows={3}
+                rows={4}
                 required
+                className="mt-1.5"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Providências Adotadas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Providências Adotadas</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Providências Adotadas</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
-              <Label>Ações da Equipe</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+              <Label className="mb-3 block">Ações da Equipe</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {teamActionsList.map((action) => (
-                  <div key={action} className="flex items-center space-x-2">
+                  <div key={action} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted transition-colors">
                     <Checkbox
                       id={action}
                       checked={formData.teamActions.includes(action)}
                       onCheckedChange={() => toggleArrayField("teamActions", action)}
                     />
-                    <Label htmlFor={action} className="text-sm">{action}</Label>
+                    <Label htmlFor={action} className="text-sm font-normal cursor-pointer">{action}</Label>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <Label>Acionamento de Órgãos</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+              <Label className="mb-3 block">Acionamento de Órgãos</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {organisms.map((organism) => (
-                  <div key={organism} className="flex items-center space-x-2">
+                  <div key={organism} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted transition-colors">
                     <Checkbox
                       id={organism}
                       checked={formData.activatedOrganisms.includes(organism)}
                       onCheckedChange={() => toggleArrayField("activatedOrganisms", organism)}
                     />
-                    <Label htmlFor={organism} className="text-sm">{organism}</Label>
+                    <Label htmlFor={organism} className="text-sm font-normal cursor-pointer">{organism}</Label>
                   </div>
                 ))}
               </div>
@@ -464,9 +581,9 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         </Card>
 
         {/* Relato Detalhado */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Relato e Observações</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Relato e Observações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -476,7 +593,8 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                 value={formData.detailedReport}
                 onChange={(e) => updateFormData("detailedReport", e.target.value)}
                 placeholder="Descreva detalhadamente o atendimento realizado..."
-                rows={4}
+                rows={5}
+                className="mt-1.5"
               />
             </div>
             <div>
@@ -486,7 +604,8 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                 value={formData.observations}
                 onChange={(e) => updateFormData("observations", e.target.value)}
                 placeholder="Observações adicionais ou pendências..."
-                rows={3}
+                rows={4}
+                className="mt-1.5"
               />
             </div>
             <div>
@@ -496,22 +615,25 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                 value={formData.responsibleAgents}
                 onChange={(e) => updateFormData("responsibleAgents", e.target.value)}
                 placeholder="Nome dos agentes responsáveis pelo atendimento"
+                className="mt-1.5"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Botões de Ação */}
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onBack}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onBack} size="lg">
             Cancelar
           </Button>
           <Button 
             type="submit"
-            className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90"
+            disabled={isLoading || formProgress < 100}
+            size="lg"
+            className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 shadow-md"
           >
             <Save className="w-4 h-4 mr-2" />
-            Salvar Ocorrência
+            {isLoading ? "Salvando..." : "Salvar Ocorrência"}
           </Button>
         </div>
       </form>
