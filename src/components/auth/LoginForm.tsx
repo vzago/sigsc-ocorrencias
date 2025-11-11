@@ -5,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { authApi } from "@/services/auth.service";
+import { setAuthToken } from "@/config/api.config";
 
 interface LoginFormProps {
-  onLogin: (credentials: { username: string; password: string }) => void;
+  onLogin: (user: { id: string; username: string; name: string; email: string }) => void;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
@@ -31,19 +33,24 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
     setIsLoading(true);
     
-    // Simular validação (demo)
-    setTimeout(() => {
-      if (username === "admin" && password === "123456") {
-        onLogin({ username, password });
-      } else {
-        toast({
-          title: "Erro de autenticação",
-          description: "Usuário ou senha inválidos.",
-          variant: "destructive",
-        });
-      }
+    try {
+      const response = await authApi.login({ username, password });
+      setAuthToken(response.access_token);
+      onLogin(response.user);
+      
+      toast({
+        title: "Sucesso",
+        description: `Bem-vindo, ${response.user.name}!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro de autenticação",
+        description: error instanceof Error ? error.message : "Usuário ou senha inválidos.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -111,7 +118,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           </form>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Demo: usuário <strong>admin</strong>, senha <strong>123456</strong>
+            Faça login com suas credenciais
           </div>
         </CardContent>
       </Card>
