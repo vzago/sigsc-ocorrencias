@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { FirebaseService } from '../firebase/firebase.service';
-import { CollectionReference, DocumentSnapshot } from 'firebase-admin/firestore';
+import { CollectionReference, DocumentSnapshot, Timestamp } from 'firebase-admin/firestore';
 import { User } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -71,12 +71,8 @@ export class UsersService {
       email: createUserDto.email,
       password: hashedPassword,
       active: createUserDto.active ?? true,
-      createdAt: this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(now),
-      updatedAt: this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(now),
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
     };
 
     const docRef = await this.collection.add(userData);
@@ -115,9 +111,7 @@ export class UsersService {
     await this.findOne(id);
 
     const updateData: any = {
-      updatedAt: this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(new Date()),
+      updatedAt: Timestamp.fromDate(new Date()),
     };
 
     if (updateUserDto.password) {

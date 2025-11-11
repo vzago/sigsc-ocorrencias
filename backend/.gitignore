@@ -4,4 +4,7 @@ node_modules
 .env.local
 coverage
 *.log
+firebase-service-account.json
+*-service-account.json
+
 

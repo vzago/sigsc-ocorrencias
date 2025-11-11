@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FirebaseService } from '../firebase/firebase.service';
-import { CollectionReference, Query, DocumentSnapshot } from 'firebase-admin/firestore';
+import { CollectionReference, Query, DocumentSnapshot, Timestamp } from 'firebase-admin/firestore';
 import {
   Occurrence,
   OccurrenceStatus,
@@ -43,27 +43,19 @@ export class OccurrencesService {
     const firestoreData = { ...data };
     
     if (firestoreData.startDateTime && firestoreData.startDateTime instanceof Date) {
-      firestoreData.startDateTime = this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(firestoreData.startDateTime);
+      firestoreData.startDateTime = Timestamp.fromDate(firestoreData.startDateTime);
     }
     
     if (firestoreData.endDateTime && firestoreData.endDateTime instanceof Date) {
-      firestoreData.endDateTime = this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(firestoreData.endDateTime);
+      firestoreData.endDateTime = Timestamp.fromDate(firestoreData.endDateTime);
     }
 
     if (firestoreData.createdAt && firestoreData.createdAt instanceof Date) {
-      firestoreData.createdAt = this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(firestoreData.createdAt);
+      firestoreData.createdAt = Timestamp.fromDate(firestoreData.createdAt);
     }
 
     if (firestoreData.updatedAt && firestoreData.updatedAt instanceof Date) {
-      firestoreData.updatedAt = this.firebaseService
-        .getFirestore()
-        .Timestamp.fromDate(firestoreData.updatedAt);
+      firestoreData.updatedAt = Timestamp.fromDate(firestoreData.updatedAt);
     }
 
     delete firestoreData.id;
@@ -110,9 +102,7 @@ export class OccurrencesService {
         query = query.where(
           'startDateTime',
           '>=',
-          this.firebaseService
-            .getFirestore()
-            .Timestamp.fromDate(new Date(filters.startDate)),
+          Timestamp.fromDate(new Date(filters.startDate)),
         );
       }
 
@@ -120,9 +110,7 @@ export class OccurrencesService {
         query = query.where(
           'startDateTime',
           '<=',
-          this.firebaseService
-            .getFirestore()
-            .Timestamp.fromDate(new Date(filters.endDate)),
+          Timestamp.fromDate(new Date(filters.endDate)),
         );
       }
     }

@@ -7,12 +7,14 @@ NODE_ENV=development
 PORT=3000
 
 # Firebase Configuration
-# Opção 1: Service Account JSON (Recomendado para produção)
-# Cole o conteúdo completo do arquivo JSON da service account aqui
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"...","token_uri":"...","auth_provider_x509_cert_url":"...","client_x509_cert_url":"..."}
+# Opção 1: Caminho para arquivo JSON (RECOMENDADO - mais seguro e fácil)
+FIREBASE_SERVICE_ACCOUNT_PATH=firebase-service-account.json
 
-# Opção 2: Project ID (Para desenvolvimento com emulador Firebase)
-FIREBASE_PROJECT_ID=seu-project-id
+# Opção 2: Service Account JSON direto no .env (pode ter problemas com quebras de linha)
+# FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
+
+# Opção 3: Project ID (Para desenvolvimento com emulador Firebase)
+# FIREBASE_PROJECT_ID=seu-project-id
 
 # JWT Configuration
 JWT_SECRET=your-secret-key-change-in-production
@@ -24,7 +26,9 @@ FRONTEND_URL=http://localhost:5173
 
 ## Onde conseguir as credenciais do Firebase
 
-### Opção 1: Service Account (Recomendado para Produção)
+### Opção 1: Arquivo JSON (RECOMENDADO - Mais Seguro)
+
+Esta é a forma mais fácil e segura de configurar:
 
 1. Acesse o [Firebase Console](https://console.firebase.google.com/)
 2. Selecione seu projeto (ou crie um novo se necessário)
@@ -34,12 +38,22 @@ FRONTEND_URL=http://localhost:5173
 6. Clique em "Generate new private key"
 7. Uma janela de confirmação aparecerá - clique em "Generate key"
 8. Um arquivo JSON será baixado automaticamente
-9. Abra o arquivo JSON e copie TODO o conteúdo
-10. Cole o conteúdo completo na variável `FIREBASE_SERVICE_ACCOUNT` no arquivo `.env`
+9. **Copie o arquivo JSON para a pasta `backend/`**
+10. **Renomeie o arquivo para `firebase-service-account.json`**
+11. No arquivo `.env`, configure apenas:
+    ```env
+    FIREBASE_SERVICE_ACCOUNT_PATH=firebase-service-account.json
+    ```
 
-**Importante:** Mantenha este arquivo seguro e nunca o commite no Git!
+**Importante:** 
+- O arquivo `firebase-service-account.json` já está no `.gitignore` e não será commitado
+- Mantenha este arquivo seguro e nunca o commite no Git!
 
-### Opção 2: Project ID (Para desenvolvimento com emulador)
+### Opção 2: JSON direto no .env (Não recomendado)
+
+Se preferir colocar o JSON diretamente no `.env`, você precisa converter para uma única linha (sem quebras de linha reais). Isso pode causar problemas de parsing.
+
+### Opção 3: Project ID (Para desenvolvimento com emulador)
 
 1. Acesse o [Firebase Console](https://console.firebase.google.com/)
 2. Selecione seu projeto

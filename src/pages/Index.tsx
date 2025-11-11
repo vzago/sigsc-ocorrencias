@@ -4,10 +4,13 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { OccurrenceForm } from "@/components/forms/OccurrenceForm";
 import { OccurrenceDetails } from "@/components/occurrence/OccurrenceDetails";
+import { removeAuthToken } from "@/config/api.config";
 
 type User = {
+  id: string;
   name: string;
   username: string;
+  email: string;
 };
 
 type Occurrence = {
@@ -28,14 +31,12 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<View>("dashboard");
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
 
-  const handleLogin = (credentials: { username: string; password: string }) => {
-    setUser({
-      name: "Administrador",
-      username: credentials.username
-    });
+  const handleLogin = (user: User) => {
+    setUser(user);
   };
 
   const handleLogout = () => {
+    removeAuthToken();
     setUser(null);
     setCurrentView("dashboard");
     setSelectedOccurrence(null);
