@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,8 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const filterOccurrencesByDate = () => {
+  // Memoize filtered occurrences to prevent infinite re-renders
+  const filteredOccurrences = useMemo(() => {
     if (!startDate || !endDate) {
       return occurrences;
     }
@@ -42,18 +43,12 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
       const occurrenceDate = new Date(occurrence.dateTime);
       return occurrenceDate >= start && occurrenceDate <= end;
     });
-  };
+  }, [occurrences, startDate, endDate]);
 
-  const generateReport = () => {
-    const filteredOccurrences = filterOccurrencesByDate();
-    
-    if (filteredOccurrences.length === 0) {
-      toast({
-        title: "Nenhuma ocorrência encontrada",
-        description: "Não há ocorrências no período selecionado.",
-        variant: "destructive",
-      });
-      return;
+  // Memoize report statistics
+  const reportStats = useMemo(() => {
+    if (!startDate || !endDate || filteredOccurrences.length === 0) {
+      return null;
     }
 
     // Calculate statistics
@@ -69,14 +64,31 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
       occurrencesByCategory,
       occurrences: filteredOccurrences
     };
-  };
+  }, [startDate, endDate, filteredOccurrences]);
 
   const handleGeneratePDF = async () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Datas obrigatórias",
+        description: "Por favor, selecione as datas inicial e final.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (filteredOccurrences.length === 0) {
+      toast({
+        title: "Nenhuma ocorrência encontrada",
+        description: "Não há ocorrências no período selecionado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const reportData = generateReport();
-      if (reportData) {
-        await generateReportPDF(reportData);
+      if (reportStats) {
+        await generateReportPDF(reportStats);
         toast({
           title: "Relatório gerado",
           description: "O arquivo PDF foi baixado com sucesso.",
@@ -92,9 +104,6 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
       setIsGenerating(false);
     }
   };
-
-  const filteredOccurrences = filterOccurrencesByDate();
-  const reportStats = generateReport();
 
   return (
     <div className="space-y-6">
