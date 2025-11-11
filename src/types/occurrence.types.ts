@@ -111,5 +111,15 @@ export interface FilterOccurrenceDto {
   startDate?: string;
   endDate?: string;
   requesterName?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 

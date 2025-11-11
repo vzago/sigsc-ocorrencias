@@ -10,7 +10,7 @@ export interface OccurrenceForPDF {
   address: string;
   requester: string;
   description: string;
-  expandedData?: any;
+  expandedData?: Record<string, string | number>;
 }
 
 export const generateOccurrencePDF = async (occurrence: OccurrenceForPDF): Promise<void> => {

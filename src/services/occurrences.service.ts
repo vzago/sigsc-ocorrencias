@@ -1,8 +1,8 @@
 import { apiConfig, getAuthHeaders } from '@/config/api.config';
-import { CreateOccurrenceDto, UpdateOccurrenceDto, FilterOccurrenceDto } from '@/types/occurrence.types';
+import { CreateOccurrenceDto, UpdateOccurrenceDto, FilterOccurrenceDto, Occurrence, PaginatedResponse } from '@/types/occurrence.types';
 
 export const occurrencesApi = {
-  async getAll(filters?: FilterOccurrenceDto) {
+  async getAll(filters?: FilterOccurrenceDto): Promise<PaginatedResponse<Occurrence>> {
     const params = new URLSearchParams();
     
     if (filters?.category) params.append('category', filters.category);
@@ -11,6 +11,8 @@ export const occurrencesApi = {
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.requesterName) params.append('requesterName', filters.requesterName);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const queryString = params.toString();
     const url = `${apiConfig.baseURL}/occurrences${queryString ? `?${queryString}` : ''}`;
