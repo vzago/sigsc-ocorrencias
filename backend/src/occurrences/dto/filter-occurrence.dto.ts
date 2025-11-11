@@ -1,4 +1,5 @@
-import { IsOptional, IsEnum, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsDateString, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { OccurrenceCategory, OccurrenceStatus } from '../interfaces/occurrence.interface';
 
 export class FilterOccurrenceDto {
@@ -25,5 +26,17 @@ export class FilterOccurrenceDto {
   @IsOptional()
   @IsString()
   requesterName?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number;
 }
 

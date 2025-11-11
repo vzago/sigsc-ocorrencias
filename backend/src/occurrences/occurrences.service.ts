@@ -99,7 +99,7 @@ export class OccurrencesService {
     return this.findOne(docRef.id);
   }
 
-  async findAll(filters?: FilterOccurrenceDto): Promise<Occurrence[]> {
+  async findAll(filters?: FilterOccurrenceDto): Promise<{ data: Occurrence[]; total: number; page: number; limit: number; totalPages: number }> {
     let query: Query = this.collection;
     let needsInMemorySort = false;
 
@@ -163,7 +163,8 @@ export class OccurrencesService {
         (occ) =>
           occ.description?.toLowerCase().includes(searchLower) ||
           occ.raNumber?.toLowerCase().includes(searchLower) ||
-          occ.requesterName?.toLowerCase().includes(searchLower),
+          occ.requesterName?.toLowerCase().includes(searchLower) ||
+          occ.location?.address?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -174,7 +175,21 @@ export class OccurrencesService {
       );
     }
 
-    return occurrences;
+    const total = occurrences.length;
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedOccurrences = occurrences.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: paginatedOccurrences,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async findOne(id: string): Promise<Occurrence> {

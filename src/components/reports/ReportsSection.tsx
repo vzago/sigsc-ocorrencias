@@ -1,12 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Calendar } from "lucide-react";
+import { FileText, Download, Calendar, Loader2 } from "lucide-react";
 import { generateReportPDF } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
+import { occurrencesApi } from "@/services/occurrences.service";
+import { Occurrence as ApiOccurrence } from "@/types/occurrence.types";
 
 interface Occurrence {
   id: string;
@@ -19,15 +21,81 @@ interface Occurrence {
   description: string;
 }
 
-interface ReportsSectionProps {
-  occurrences: Occurrence[];
-}
+const convertApiOccurrence = (apiOccurrence: ApiOccurrence): Occurrence => {
+  const formatDateTime = (date: string | Date | undefined): string => {
+    if (!date) return "";
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
+  const formatAddress = (location: ApiOccurrence["location"]): string => {
+    if (!location) return "";
+    const parts = [
+      location.address,
+      location.number,
+      location.neighborhood
+    ].filter(Boolean);
+    return parts.join(", ");
+  };
+
+  return {
+    id: apiOccurrence.id,
+    ra: apiOccurrence.raNumber,
+    dateTime: formatDateTime(apiOccurrence.startDateTime),
+    category: apiOccurrence.category,
+    status: apiOccurrence.status,
+    address: formatAddress(apiOccurrence.location),
+    requester: apiOccurrence.requesterName,
+    description: apiOccurrence.description,
+  };
+};
+
+export const ReportsSection = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (startDate && endDate) {
+      loadOccurrences();
+    } else {
+      setOccurrences([]);
+    }
+  }, [startDate, endDate]);
+
+  const loadOccurrences = async () => {
+    if (!startDate || !endDate) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await occurrencesApi.getAll({
+        startDate,
+        endDate,
+        limit: 10000,
+      });
+      const convertedOccurrences = Array.isArray(response.data)
+        ? response.data.map(convertApiOccurrence)
+        : [];
+      setOccurrences(convertedOccurrences);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar ocorrências",
+        description: error.message || "Não foi possível carregar as ocorrências.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Memoize filtered occurrences to prevent infinite re-renders
   const filteredOccurrences = useMemo(() => {
@@ -107,7 +175,7 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-card border border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -138,17 +206,26 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
           
           <Button 
             onClick={handleGeneratePDF}
-            disabled={isGenerating}
+            disabled={isGenerating || isLoading || !startDate || !endDate}
             className="w-full"
           >
-            <Download className="mr-2 h-4 w-4" />
-            {isGenerating ? 'Gerando...' : 'Gerar Relatório PDF'}
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Gerar Relatório PDF
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
 
       {reportStats && (
-        <Card>
+        <Card className="bg-card border border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -157,7 +234,7 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
                 <div className="text-2xl font-bold text-primary">
                   {reportStats.totalOccurrences}
                 </div>
@@ -166,7 +243,7 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
                 </div>
               </div>
               
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
                 <div className="text-2xl font-bold text-primary">
                   {Object.keys(reportStats.occurrencesByCategory).length}
                 </div>
@@ -175,7 +252,7 @@ export const ReportsSection = ({ occurrences }: ReportsSectionProps) => {
                 </div>
               </div>
               
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
                 <div className="text-2xl font-bold text-primary">
                   {reportStats.startDate && reportStats.endDate ? 
                     Math.ceil((new Date(reportStats.endDate).getTime() - new Date(reportStats.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 
