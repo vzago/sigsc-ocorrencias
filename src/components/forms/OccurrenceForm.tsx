@@ -9,28 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence } from "@/types/occurrence.types";
+import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence as ApiOccurrence, OccurrenceDisplay } from "@/types/occurrence.types";
 
 interface OccurrenceFormProps {
   onBack: () => void;
-  onSave: (data: Occurrence) => void;
-  occurrenceToEdit?: {
-    id: string;
-    ra: string;
-    dateTime: string;
-    category: string;
-    status: string;
-    address: string;
-    requester: string;
-    description: string;
-    sspdsNumber?: string;
-    phone?: string;
-    latitude?: string;
-    longitude?: string;
-    detailedReport?: string;
-    observations?: string;
-    responsibleAgents?: string;
-  };
+  onSave: (data: ApiOccurrence) => void;
 }
 
 export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceFormProps) {
@@ -399,6 +382,17 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
             </div>
             
             <div>
+              <Label htmlFor="endDateTime">Data/Hora Fim</Label>
+              <Input
+                id="endDateTime"
+                type="datetime-local"
+                value={formData.endDateTime}
+                onChange={(e) => updateFormData("endDateTime", e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            
+            <div>
               <Label className="mb-2 block">Origem do Chamado</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                 {origins.map((origin) => (
@@ -411,6 +405,29 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                     <Label htmlFor={origin} className="text-sm font-normal cursor-pointer">{origin}</Label>
                   </div>
                 ))}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+              <div>
+                <Label htmlFor="cobradeCode">Código COBRADE</Label>
+                <Input
+                  id="cobradeCode"
+                  value={formData.cobradeCode}
+                  onChange={(e) => updateFormData("cobradeCode", e.target.value)}
+                  placeholder="Ex: 1.2.3.4"
+                  className="mt-1.5"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-8">
+                <Checkbox
+                  id="isConfidential"
+                  checked={formData.isConfidential}
+                  onCheckedChange={(checked) => updateFormData("isConfidential", checked === true)}
+                />
+                <Label htmlFor="isConfidential" className="text-sm font-normal cursor-pointer">
+                  Ocorrência Confidencial
+                </Label>
               </div>
             </div>
           </CardContent>
@@ -634,6 +651,48 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                       placeholder="Ex: 1000"
                       className="mt-1.5"
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Dados Ambientais */}
+            {(formData.category === "vistoria_ambiental" || formData.category === "incendio_vegetacao" || formData.category === "risco_vegetacao") && (
+              <div className="space-y-4 p-4 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/5 rounded-lg border-2 border-primary/20">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-secondary rounded-full"></div>
+                  Dados Ambientais
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="temperature">Temperatura (°C)</Label>
+                    <Input
+                      id="temperature"
+                      value={formData.temperature}
+                      onChange={(e) => updateFormData("temperature", e.target.value)}
+                      placeholder="Ex: 25"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="humidity">Umidade (%)</Label>
+                    <Input
+                      id="humidity"
+                      value={formData.humidity}
+                      onChange={(e) => updateFormData("humidity", e.target.value)}
+                      placeholder="Ex: 60"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-8">
+                    <Checkbox
+                      id="hasWaterBody"
+                      checked={formData.hasWaterBody}
+                      onCheckedChange={(checked) => updateFormData("hasWaterBody", checked === true)}
+                    />
+                    <Label htmlFor="hasWaterBody" className="text-sm font-normal cursor-pointer">
+                      Presença de Corpo d'Água
+                    </Label>
                   </div>
                 </div>
               </div>

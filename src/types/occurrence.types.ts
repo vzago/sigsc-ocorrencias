@@ -123,3 +123,42 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface OccurrenceDisplay {
+  id: string;
+  ra: string;
+  dateTime: string;
+  endDateTime?: string;
+  category: "vistoria_ambiental" | "risco_vegetacao" | "incendio_vegetacao" | "outras";
+  status: "aberta" | "andamento" | "fechada";
+  address: string;
+  addressNumber?: string;
+  neighborhood?: string;
+  reference?: string;
+  requester: string;
+  institution?: string;
+  description: string;
+  sspdsNumber?: string;
+  phone?: string;
+  latitude?: string;
+  longitude?: string;
+  altitude?: string;
+  origins?: string[];
+  cobradeCode?: string;
+  isConfidential?: boolean;
+  subcategory?: string;
+  areaType?: string;
+  affectedArea?: string;
+  temperature?: string;
+  humidity?: string;
+  hasWaterBody?: boolean;
+  impactType?: string;
+  impactMagnitude?: string;
+  teamActions?: string[];
+  activatedOrganisms?: string[];
+  vehicles?: string[];
+  materials?: string;
+  detailedReport?: string;
+  observations?: string;
+  responsibleAgents?: string;
+}
+

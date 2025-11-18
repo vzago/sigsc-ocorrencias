@@ -3,36 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Edit, AlertTriangle, TreePine, Flame, Building2, FileText, Calendar, Tag, Hash } from "lucide-react";
+import { ArrowLeft, Download, Edit, AlertTriangle, TreePine, Flame, Building2, FileText, Calendar, Tag, Hash, MapPin, User, Clock, Shield, Code, Thermometer, Droplets, Waves, Target, Truck, Package, CheckCircle2 } from "lucide-react";
 import { generateOccurrencePDF } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { OccurrenceStatus } from "@/types/occurrence.types";
-
-interface Occurrence {
-  id: string;
-  ra: string;
-  dateTime: string;
-  category: "vistoria_ambiental" | "risco_vegetacao" | "incendio_vegetacao" | "outras";
-  status: "aberta" | "andamento" | "fechada";
-  address: string;
-  requester: string;
-  description: string;
-  // Dados expandidos para exibição
-  sspdsNumber?: string;
-  phone?: string;
-  latitude?: string;
-  longitude?: string;
-  detailedReport?: string;
-  observations?: string;
-  responsibleAgents?: string;
-}
+import { OccurrenceStatus, OccurrenceDisplay } from "@/types/occurrence.types";
 
 interface OccurrenceDetailsProps {
-  occurrence: Occurrence;
+  occurrence: OccurrenceDisplay;
   onBack: () => void;
-  onEdit?: (occurrence: Occurrence) => void;
-  onStatusChange?: (occurrence: Occurrence) => void;
+  onEdit?: (occurrence: OccurrenceDisplay) => void;
+  onStatusChange?: (occurrence: OccurrenceDisplay) => void;
 }
 
 const categoryIcons = {
@@ -75,7 +56,7 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
       const updatedOccurrence = await occurrencesApi.update(occurrence.id, { status: newStatus });
       const convertedOccurrence = {
         ...occurrence,
-        status: updatedOccurrence.status as Occurrence["status"]
+        status: updatedOccurrence.status as OccurrenceDisplay["status"]
       };
       setOccurrence(convertedOccurrence);
       
@@ -101,6 +82,37 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
 
   const handleExportPDF = async () => {
     try {
+      const expandedData: Record<string, string> = {};
+      
+      if (occurrence.endDateTime) expandedData["Data/Hora Fim"] = occurrence.endDateTime;
+      if (occurrence.origins && occurrence.origins.length > 0) expandedData["Origem do Chamado"] = occurrence.origins.join(", ");
+      if (occurrence.sspdsNumber) expandedData["Número SSPDS"] = occurrence.sspdsNumber;
+      if (occurrence.cobradeCode) expandedData["Código COBRADE"] = occurrence.cobradeCode;
+      if (occurrence.isConfidential !== undefined) expandedData["Confidencial"] = occurrence.isConfidential ? "Sim" : "Não";
+      if (occurrence.subcategory) expandedData["Subcategoria"] = occurrence.subcategory;
+      if (occurrence.addressNumber) expandedData["Número"] = occurrence.addressNumber;
+      if (occurrence.neighborhood) expandedData["Bairro"] = occurrence.neighborhood;
+      if (occurrence.reference) expandedData["Ponto de Referência"] = occurrence.reference;
+      if (occurrence.latitude) expandedData["Latitude"] = occurrence.latitude;
+      if (occurrence.longitude) expandedData["Longitude"] = occurrence.longitude;
+      if (occurrence.altitude) expandedData["Altitude (m)"] = occurrence.altitude;
+      if (occurrence.institution) expandedData["Instituição"] = occurrence.institution;
+      if (occurrence.phone) expandedData["Telefone"] = occurrence.phone;
+      if (occurrence.areaType) expandedData["Tipo de Área"] = occurrence.areaType;
+      if (occurrence.affectedArea) expandedData["Área Atingida (m²)"] = occurrence.affectedArea;
+      if (occurrence.temperature) expandedData["Temperatura (°C)"] = occurrence.temperature;
+      if (occurrence.humidity) expandedData["Umidade (%)"] = occurrence.humidity;
+      if (occurrence.hasWaterBody !== undefined) expandedData["Presença de Corpo d'Água"] = occurrence.hasWaterBody ? "Sim" : "Não";
+      if (occurrence.impactType) expandedData["Tipo de Impacto"] = occurrence.impactType;
+      if (occurrence.impactMagnitude) expandedData["Magnitude do Impacto"] = occurrence.impactMagnitude;
+      if (occurrence.teamActions && occurrence.teamActions.length > 0) expandedData["Ações da Equipe"] = occurrence.teamActions.join(", ");
+      if (occurrence.activatedOrganisms && occurrence.activatedOrganisms.length > 0) expandedData["Órgãos Acionados"] = occurrence.activatedOrganisms.join(", ");
+      if (occurrence.vehicles && occurrence.vehicles.length > 0) expandedData["Veículos"] = occurrence.vehicles.join(", ");
+      if (occurrence.materials) expandedData["Materiais"] = occurrence.materials;
+      if (occurrence.detailedReport) expandedData["Relato Detalhado"] = occurrence.detailedReport;
+      if (occurrence.observations) expandedData["Observações"] = occurrence.observations;
+      if (occurrence.responsibleAgents) expandedData["Agentes Responsáveis"] = occurrence.responsibleAgents;
+
       const occurrenceForPDF = {
         id: occurrence.id,
         ra: occurrence.ra,
@@ -110,15 +122,7 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
         address: occurrence.address,
         requester: occurrence.requester,
         description: occurrence.description,
-        expandedData: {
-          "Número SSPDS": occurrence.sspdsNumber || "Não informado",
-          "Telefone": occurrence.phone || "Não informado",
-          "Latitude": occurrence.latitude || "Não informado",
-          "Longitude": occurrence.longitude || "Não informado",
-          "Relato Detalhado": occurrence.detailedReport || "Não informado",
-          "Observações": occurrence.observations || "Não informado",
-          "Agentes Responsáveis": occurrence.responsibleAgents || "Não informado"
-        }
+        expandedData
       };
       
       await generateOccurrencePDF(occurrenceForPDF);
@@ -154,14 +158,14 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
               </div>
             </div>
             
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
               <Select 
                 value={occurrence.status} 
                 onValueChange={handleStatusChange}
                 disabled={isUpdatingStatus}
               >
-                <SelectTrigger className="w-[120px] h-8 border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 shadow-none">
-                  <Badge variant={statusColors[occurrence.status]} className="w-full justify-between cursor-pointer text-xs">
+                <SelectTrigger className="w-[160px] h-8 border-0 bg-transparent p-2 gap-2 hover:bg-transparent focus:ring-0 shadow-none">
+                  <Badge variant={statusColors[occurrence.status]} className="w-full py-2 justify-center cursor-pointer text-xs">
                     {statusLabels[occurrence.status]}
                   </Badge>
                 </SelectTrigger>
@@ -255,42 +259,120 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
             </div>
           </div>
 
-          {occurrence.sspdsNumber && (
-            <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 border-t space-y-3">
+            {occurrence.sspdsNumber && (
               <div className="flex items-center gap-2">
                 <Hash className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Número SSPDS:</span>
                 <span className="text-sm font-semibold text-foreground">{occurrence.sspdsNumber}</span>
               </div>
-            </div>
-          )}
+            )}
+            {occurrence.endDateTime && (
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Data/Hora Fim:</span>
+                <span className="text-sm font-semibold text-foreground">{occurrence.endDateTime}</span>
+              </div>
+            )}
+            {occurrence.origins && occurrence.origins.length > 0 && (
+              <div className="flex items-start gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Origem do Chamado:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {occurrence.origins.map((origin, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {origin}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            {occurrence.cobradeCode && (
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Código COBRADE:</span>
+                <span className="text-sm font-semibold text-foreground">{occurrence.cobradeCode}</span>
+              </div>
+            )}
+            {occurrence.isConfidential !== undefined && (
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Confidencial:</span>
+                <Badge variant={occurrence.isConfidential ? "destructive" : "outline"} className="text-xs">
+                  {occurrence.isConfidential ? "Sim" : "Não"}
+                </Badge>
+              </div>
+            )}
+            {occurrence.subcategory && (
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Subcategoria:</span>
+                <span className="text-sm font-semibold text-foreground">{occurrence.subcategory}</span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* Localização */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Localização</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Localização
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
-              <span className="text-sm font-medium text-muted-foreground block mb-1">Endereço</span>
+              <span className="text-sm font-medium text-muted-foreground block mb-1">Logradouro</span>
               <p className="text-lg text-foreground">{occurrence.address}</p>
             </div>
             
-            {(occurrence.latitude || occurrence.longitude) && (
+            {(occurrence.addressNumber || occurrence.neighborhood) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+                {occurrence.addressNumber && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block mb-1">Número</span>
+                    <p className="text-foreground">{occurrence.addressNumber}</p>
+                  </div>
+                )}
+                {occurrence.neighborhood && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block mb-1">Bairro</span>
+                    <p className="text-foreground">{occurrence.neighborhood}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {occurrence.reference && (
+              <div className="pt-2 border-t">
+                <span className="text-sm font-medium text-muted-foreground block mb-1">Ponto de Referência</span>
+                <p className="text-foreground">{occurrence.reference}</p>
+              </div>
+            )}
+            
+            {(occurrence.latitude || occurrence.longitude || occurrence.altitude) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
                 {occurrence.latitude && (
                   <div>
                     <span className="text-sm font-medium text-muted-foreground block mb-1">Latitude</span>
-                    <p className="text-foreground font-mono">{occurrence.latitude}</p>
+                    <p className="text-foreground font-mono text-sm">{occurrence.latitude}</p>
                   </div>
                 )}
                 {occurrence.longitude && (
                   <div>
                     <span className="text-sm font-medium text-muted-foreground block mb-1">Longitude</span>
-                    <p className="text-foreground font-mono">{occurrence.longitude}</p>
+                    <p className="text-foreground font-mono text-sm">{occurrence.longitude}</p>
+                  </div>
+                )}
+                {occurrence.altitude && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block mb-1">Altitude (m)</span>
+                    <p className="text-foreground font-mono text-sm">{occurrence.altitude}</p>
                   </div>
                 )}
               </div>
@@ -302,7 +384,10 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
       {/* Solicitante */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Dados do Solicitante</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Dados do Solicitante
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -310,6 +395,12 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
               <span className="text-sm font-medium text-muted-foreground block mb-1">Nome</span>
               <p className="text-lg text-foreground">{occurrence.requester}</p>
             </div>
+            {occurrence.institution && (
+              <div>
+                <span className="text-sm font-medium text-muted-foreground block mb-1">Instituição</span>
+                <p className="text-foreground">{occurrence.institution}</p>
+              </div>
+            )}
             {occurrence.phone && (
               <div>
                 <span className="text-sm font-medium text-muted-foreground block mb-1">Telefone</span>
@@ -320,10 +411,82 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
         </CardContent>
       </Card>
 
+      {/* Dados Específicos da Categoria */}
+      {(occurrence.areaType || occurrence.affectedArea || occurrence.temperature || occurrence.humidity || occurrence.hasWaterBody !== undefined || occurrence.impactType || occurrence.impactMagnitude) && (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="w-5 h-5 text-primary" />
+              Dados Específicos da Ocorrência
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {occurrence.areaType && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Tipo de Área</span>
+                  <p className="text-foreground">{occurrence.areaType}</p>
+                </div>
+              )}
+              {occurrence.affectedArea && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Área Atingida (m²)</span>
+                  <p className="text-foreground">{occurrence.affectedArea}</p>
+                </div>
+              )}
+              {occurrence.temperature && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                    <Thermometer className="w-3 h-3" />
+                    Temperatura (°C)
+                  </span>
+                  <p className="text-foreground">{occurrence.temperature}</p>
+                </div>
+              )}
+              {occurrence.humidity && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                    <Droplets className="w-3 h-3" />
+                    Umidade (%)
+                  </span>
+                  <p className="text-foreground">{occurrence.humidity}</p>
+                </div>
+              )}
+              {occurrence.hasWaterBody !== undefined && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                    <Waves className="w-3 h-3" />
+                    Presença de Corpo d'Água
+                  </span>
+                  <Badge variant={occurrence.hasWaterBody ? "default" : "outline"} className="text-xs">
+                    {occurrence.hasWaterBody ? "Sim" : "Não"}
+                  </Badge>
+                </div>
+              )}
+              {occurrence.impactType && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Tipo de Impacto</span>
+                  <p className="text-foreground">{occurrence.impactType}</p>
+                </div>
+              )}
+              {occurrence.impactMagnitude && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Magnitude do Impacto</span>
+                  <p className="text-foreground">{occurrence.impactMagnitude}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Descrição */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Descrição da Ocorrência</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Descrição da Ocorrência
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
@@ -354,6 +517,88 @@ export function OccurrenceDetails({ occurrence: initialOccurrence, onBack, onEdi
           </div>
         </CardContent>
       </Card>
+
+      {/* Providências Adotadas */}
+      {(occurrence.teamActions && occurrence.teamActions.length > 0) || (occurrence.activatedOrganisms && occurrence.activatedOrganisms.length > 0) ? (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              Providências Adotadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {occurrence.teamActions && occurrence.teamActions.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-3">Ações da Equipe</span>
+                  <div className="flex flex-wrap gap-2">
+                    {occurrence.teamActions.map((action, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs py-1 px-2">
+                        {action}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {occurrence.activatedOrganisms && occurrence.activatedOrganisms.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-3">Órgãos Acionados</span>
+                  <div className="flex flex-wrap gap-2">
+                    {occurrence.activatedOrganisms.map((organism, index) => (
+                      <Badge key={index} variant="outline" className="text-xs py-1 px-2">
+                        {organism}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Recursos Utilizados */}
+      {(occurrence.vehicles && occurrence.vehicles.length > 0) || occurrence.materials ? (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Truck className="w-5 h-5 text-primary" />
+              Recursos Utilizados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {occurrence.vehicles && occurrence.vehicles.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-2 flex items-center gap-1">
+                    <Truck className="w-4 h-4" />
+                    Veículos
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {occurrence.vehicles.map((vehicle, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs py-1 px-2">
+                        {vehicle}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {occurrence.materials && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block mb-2 flex items-center gap-1">
+                    <Package className="w-4 h-4" />
+                    Materiais
+                  </span>
+                  <p className="text-foreground">{occurrence.materials}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Agentes Responsáveis */}
       {occurrence.responsibleAgents && (
