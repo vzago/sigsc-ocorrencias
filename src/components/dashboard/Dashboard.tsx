@@ -11,27 +11,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ReportsSection } from "@/components/reports/ReportsSection";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { Occurrence as ApiOccurrence, OccurrenceStatus, OccurrenceCategory, FilterOccurrenceDto } from "@/types/occurrence.types";
+import { Occurrence as ApiOccurrence, OccurrenceStatus, OccurrenceCategory, FilterOccurrenceDto, OccurrenceDisplay } from "@/types/occurrence.types";
 import { useToast } from "@/hooks/use-toast";
-
-interface Occurrence {
-  id: string;
-  ra: string;
-  dateTime: string;
-  category: "vistoria_ambiental" | "risco_vegetacao" | "incendio_vegetacao" | "outras";
-  status: "aberta" | "andamento" | "fechada";
-  address: string;
-  requester: string;
-  description: string;
-}
 
 interface DashboardProps {
   onNewOccurrence: () => void;
-  onViewOccurrence: (occurrence: Occurrence) => void;
+  onViewOccurrence: (occurrence: OccurrenceDisplay) => void;
   refreshTrigger?: number;
 }
 
-const convertApiOccurrenceToDashboard = (apiOccurrence: ApiOccurrence): Occurrence => {
+const convertApiOccurrenceToDashboard = (apiOccurrence: ApiOccurrence): OccurrenceDisplay => {
   const formatDateTime = (date: string | Date | undefined): string => {
     if (!date) return "";
     const d = typeof date === "string" ? new Date(date) : date;
@@ -58,11 +47,39 @@ const convertApiOccurrenceToDashboard = (apiOccurrence: ApiOccurrence): Occurren
     id: apiOccurrence.id,
     ra: apiOccurrence.raNumber,
     dateTime: formatDateTime(apiOccurrence.startDateTime),
-    category: apiOccurrence.category as Occurrence["category"],
-    status: apiOccurrence.status as Occurrence["status"],
-    address: formatAddress(apiOccurrence.location),
+    endDateTime: formatDateTime(apiOccurrence.endDateTime),
+    category: apiOccurrence.category as OccurrenceDisplay["category"],
+    status: apiOccurrence.status as OccurrenceDisplay["status"],
+    address: apiOccurrence.location?.address || "",
+    addressNumber: apiOccurrence.location?.number,
+    neighborhood: apiOccurrence.location?.neighborhood,
+    reference: apiOccurrence.location?.reference,
     requester: apiOccurrence.requesterName,
+    institution: apiOccurrence.institution,
     description: apiOccurrence.description,
+    sspdsNumber: apiOccurrence.sspdsNumber,
+    phone: apiOccurrence.phone,
+    latitude: apiOccurrence.location?.latitude?.toString(),
+    longitude: apiOccurrence.location?.longitude?.toString(),
+    altitude: apiOccurrence.location?.altitude?.toString(),
+    origins: apiOccurrence.origins,
+    cobradeCode: apiOccurrence.cobradeCode,
+    isConfidential: apiOccurrence.isConfidential,
+    subcategory: apiOccurrence.subcategory,
+    areaType: apiOccurrence.areaType,
+    affectedArea: apiOccurrence.affectedArea,
+    temperature: apiOccurrence.temperature,
+    humidity: apiOccurrence.humidity,
+    hasWaterBody: apiOccurrence.hasWaterBody,
+    impactType: apiOccurrence.impactType,
+    impactMagnitude: apiOccurrence.impactMagnitude,
+    teamActions: apiOccurrence.actions?.filter(a => a.teamAction).map(a => a.teamAction!),
+    activatedOrganisms: apiOccurrence.actions?.filter(a => a.activatedOrganism).map(a => a.activatedOrganism!),
+    vehicles: apiOccurrence.resources?.filter(r => r.vehicle).map(r => r.vehicle!),
+    materials: apiOccurrence.resources?.find(r => r.materials)?.materials,
+    detailedReport: apiOccurrence.detailedReport,
+    observations: apiOccurrence.observations,
+    responsibleAgents: apiOccurrence.responsibleAgents,
   };
 };
 
@@ -93,7 +110,7 @@ const statusColors = {
 } as const;
 
 export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }: DashboardProps) {
-  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [occurrences, setOccurrences] = useState<OccurrenceDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
