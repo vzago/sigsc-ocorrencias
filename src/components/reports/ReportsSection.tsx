@@ -13,7 +13,7 @@ import { Occurrence as ApiOccurrence } from "@/types/occurrence.types";
 interface Occurrence {
   id: string;
   ra: string;
-  dateTime: string;
+  dateTime: string; // ISO string for comparisons
   category: string;
   status: string;
   address: string;
@@ -47,7 +47,12 @@ const convertApiOccurrence = (apiOccurrence: ApiOccurrence): Occurrence => {
   return {
     id: apiOccurrence.id,
     ra: apiOccurrence.raNumber,
-    dateTime: formatDateTime(apiOccurrence.startDateTime),
+    dateTime:
+      typeof apiOccurrence.startDateTime === 'string'
+        ? apiOccurrence.startDateTime
+        : apiOccurrence.startDateTime
+        ? new Date(apiOccurrence.startDateTime).toISOString()       
+        : '',
     category: apiOccurrence.category,
     status: apiOccurrence.status,
     address: formatAddress(apiOccurrence.location),
