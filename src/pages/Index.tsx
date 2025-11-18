@@ -141,6 +141,19 @@ const Index = () => {
     setCurrentView("dashboard");
   };
 
+  const handleEditOccurrence = (occurrence: Occurrence) => {
+    setSelectedOccurrence(occurrence);
+    setCurrentView("edit-occurrence");
+  };
+
+  const handleUpdateOccurrence = (data: ApiOccurrence) => {
+    console.log("Ocorrência atualizada:", data);
+    const convertedOccurrence = convertApiOccurrenceToDetails(data);
+    setSelectedOccurrence(convertedOccurrence);
+    setRefreshTrigger(prev => prev + 1);
+    setCurrentView("view-occurrence");
+  };
+
   const handleBackToDashboard = () => {
     setCurrentView("dashboard");
     setSelectedOccurrence(null);
@@ -185,10 +198,19 @@ const Index = () => {
           <OccurrenceDetails 
             occurrence={selectedOccurrence}
             onBack={handleBackToDashboard}
+            onEdit={handleEditOccurrence}
             onStatusChange={(updatedOccurrence) => {
               setSelectedOccurrence(updatedOccurrence);
               setRefreshTrigger(prev => prev + 1);
             }}
+          />
+        )}
+        
+        {currentView === "edit-occurrence" && selectedOccurrence && (
+          <OccurrenceForm 
+            onBack={() => setCurrentView("view-occurrence")}
+            onSave={handleUpdateOccurrence}
+            occurrenceToEdit={selectedOccurrence}
           />
         )}
       </main>
