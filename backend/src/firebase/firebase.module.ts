@@ -12,7 +12,7 @@ import * as path from 'path';
       provide: 'FIREBASE_ADMIN',
       useFactory: (configService: ConfigService) => {
         if (!admin.apps.length) {
-          const serviceAccountPath = configService.get<string>('FIREBASE_SERVICE_ACCOUNT_PATH');
+          const serviceAccountPath = configService.get<string>('FIREBASE_CREDENTIALS_BASE64');
           const serviceAccount = configService.get<string>('FIREBASE_SERVICE_ACCOUNT');
           
           let serviceAccountJson: any = null;
@@ -44,7 +44,7 @@ import * as path from 'path';
                 projectId,
               });
             } else {
-              throw new Error('Configuração do Firebase não encontrada. Configure FIREBASE_SERVICE_ACCOUNT, FIREBASE_SERVICE_ACCOUNT_PATH ou FIREBASE_PROJECT_ID');
+              throw new Error('Configuração do Firebase não encontrada. Configure FIREBASE_SERVICE_ACCOUNT, FIREBASE_CREDENTIALS_BASE64 ou FIREBASE_PROJECT_ID');
             }
           }
         }
