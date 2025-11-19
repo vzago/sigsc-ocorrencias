@@ -7,8 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-package-lock.json
-
 node_modules
 dist
 dist-ssr
@@ -25,4 +23,24 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+.env.local
 .env.production
+.env.development
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Build outputs
+backend/dist
+backend/coverage
+
+# Service account keys
+backend/firebase-service-account.json
+**/firebase-service-account.json

@@ -8,20 +8,9 @@ import { FileText, Download, Calendar, Loader2 } from "lucide-react";
 import { generateReportPDF } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { Occurrence as ApiOccurrence } from "@/types/occurrence.types";
+import { Occurrence as ApiOccurrence, OccurrenceDisplay } from "@/types/occurrence.types";
 
-interface Occurrence {
-  id: string;
-  ra: string;
-  dateTime: string;
-  category: string;
-  status: string;
-  address: string;
-  requester: string;
-  description: string;
-}
-
-const convertApiOccurrence = (apiOccurrence: ApiOccurrence): Occurrence => {
+const convertApiOccurrence = (apiOccurrence: ApiOccurrence): OccurrenceDisplay => {
   const formatDateTime = (date: string | Date | undefined): string => {
     if (!date) return "";
     const d = typeof date === "string" ? new Date(date) : date;
@@ -47,17 +36,40 @@ const convertApiOccurrence = (apiOccurrence: ApiOccurrence): Occurrence => {
   return {
     id: apiOccurrence.id,
     ra: apiOccurrence.raNumber,
-    dateTime:
-      typeof apiOccurrence.startDateTime === 'string'
-        ? apiOccurrence.startDateTime
-        : apiOccurrence.startDateTime
-        ? new Date(apiOccurrence.startDateTime).toISOString()       
-        : '',
-    category: apiOccurrence.category,
-    status: apiOccurrence.status,
-    address: formatAddress(apiOccurrence.location),
+    dateTime: formatDateTime(apiOccurrence.startDateTime),
+    endDateTime: formatDateTime(apiOccurrence.endDateTime),
+    category: apiOccurrence.category as OccurrenceDisplay["category"],
+    status: apiOccurrence.status as OccurrenceDisplay["status"],
+    address: apiOccurrence.location?.address || "",
+    addressNumber: apiOccurrence.location?.number,
+    neighborhood: apiOccurrence.location?.neighborhood,
+    reference: apiOccurrence.location?.reference,
     requester: apiOccurrence.requesterName,
+    institution: apiOccurrence.institution,
     description: apiOccurrence.description,
+    sspdsNumber: apiOccurrence.sspdsNumber,
+    phone: apiOccurrence.phone,
+    latitude: apiOccurrence.location?.latitude?.toString(),
+    longitude: apiOccurrence.location?.longitude?.toString(),
+    altitude: apiOccurrence.location?.altitude?.toString(),
+    origins: apiOccurrence.origins,
+    cobradeCode: apiOccurrence.cobradeCode,
+    isConfidential: apiOccurrence.isConfidential,
+    subcategory: apiOccurrence.subcategory,
+    areaType: apiOccurrence.areaType,
+    affectedArea: apiOccurrence.affectedArea,
+    temperature: apiOccurrence.temperature,
+    humidity: apiOccurrence.humidity,
+    hasWaterBody: apiOccurrence.hasWaterBody,
+    impactType: apiOccurrence.impactType,
+    impactMagnitude: apiOccurrence.impactMagnitude,
+    teamActions: apiOccurrence.actions?.filter(a => a.teamAction).map(a => a.teamAction!),
+    activatedOrganisms: apiOccurrence.actions?.filter(a => a.activatedOrganism).map(a => a.activatedOrganism!),
+    vehicles: apiOccurrence.resources?.filter(r => r.vehicle).map(r => r.vehicle!),
+    materials: apiOccurrence.resources?.find(r => r.materials)?.materials,
+    detailedReport: apiOccurrence.detailedReport,
+    observations: apiOccurrence.observations,
+    responsibleAgents: apiOccurrence.responsibleAgents,
   };
 };
 
@@ -66,7 +78,7 @@ export const ReportsSection = () => {
   const [endDate, setEndDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [occurrences, setOccurrences] = useState<OccurrenceDisplay[]>([]);
   const { toast } = useToast();
 
   const loadOccurrences = useCallback(async () => {

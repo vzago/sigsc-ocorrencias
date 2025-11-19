@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,16 +9,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
-import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence } from "@/types/occurrence.types";
+import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence as ApiOccurrence, OccurrenceDisplay } from "@/types/occurrence.types";
 
 interface OccurrenceFormProps {
   onBack: () => void;
-  onSave: (data: Occurrence) => void;
+  onSave: (data: ApiOccurrence) => void;
 }
 
-export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
+export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const isEditMode = !!occurrenceToEdit;
   const [formData, setFormData] = useState({
     // Cabeçalho
     sspdsNumber: "",
@@ -70,6 +71,74 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
     observations: "",
     responsibleAgents: ""
   });
+
+  // Carregar dados da ocorrência ao editar
+  useEffect(() => {
+    const loadOccurrenceData = async () => {
+      if (occurrenceToEdit) {
+        try {
+          const fullOccurrence = await occurrencesApi.getById(occurrenceToEdit.id);
+          
+          // Formatar data para input datetime-local
+          const formatDateForInput = (dateString: string | Date) => {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+          };
+
+          setFormData({
+            sspdsNumber: fullOccurrence.sspdsNumber || "",
+            raNumber: fullOccurrence.raNumber || "",
+            startDateTime: fullOccurrence.startDateTime ? formatDateForInput(fullOccurrence.startDateTime) : "",
+            endDateTime: fullOccurrence.endDateTime ? formatDateForInput(fullOccurrence.endDateTime) : "",
+            origins: fullOccurrence.origins || [],
+            latitude: fullOccurrence.location?.latitude?.toString() || "",
+            longitude: fullOccurrence.location?.longitude?.toString() || "",
+            altitude: fullOccurrence.location?.altitude?.toString() || "",
+            cobradeCode: fullOccurrence.cobradeCode || "",
+            isConfidential: fullOccurrence.isConfidential || false,
+            address: fullOccurrence.location?.address || "",
+            number: fullOccurrence.location?.number || "",
+            neighborhood: fullOccurrence.location?.neighborhood || "",
+            reference: fullOccurrence.location?.reference || "",
+            requesterName: fullOccurrence.requesterName || "",
+            institution: fullOccurrence.institution || "",
+            phone: fullOccurrence.phone || "",
+            category: fullOccurrence.category || "",
+            subcategory: fullOccurrence.subcategory || "",
+            description: fullOccurrence.description || "",
+            areaType: fullOccurrence.areaType || "",
+            affectedArea: fullOccurrence.affectedArea || "",
+            temperature: fullOccurrence.temperature || "",
+            humidity: fullOccurrence.humidity || "",
+            hasWaterBody: fullOccurrence.hasWaterBody || false,
+            impactType: fullOccurrence.impactType || "",
+            impactMagnitude: fullOccurrence.impactMagnitude || "",
+            teamActions: fullOccurrence.actions?.filter(a => a.teamAction).map(a => a.teamAction!) || [],
+            activatedOrganisms: fullOccurrence.actions?.filter(a => a.activatedOrganism).map(a => a.activatedOrganism!) || [],
+            vehicles: fullOccurrence.resources?.filter(r => r.vehicle).map(r => ({ name: r.vehicle! })) || [],
+            materials: fullOccurrence.resources?.find(r => r.materials)?.materials || "",
+            detailedReport: fullOccurrence.detailedReport || "",
+            observations: fullOccurrence.observations || "",
+            responsibleAgents: fullOccurrence.responsibleAgents || ""
+          });
+        } catch (error) {
+          toast({
+            title: "Erro ao carregar ocorrência",
+            description: "Não foi possível carregar os dados para edição.",
+            variant: "destructive",
+          });
+          onBack();
+        }
+      }
+    };
+
+    loadOccurrenceData();
+  }, [occurrenceToEdit, onBack, toast]);
 
   const getFormProgress = () => {
     const requiredFields = [
@@ -135,7 +204,7 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         ? new Date(formData.startDateTime).toISOString()
         : now.toISOString();
 
-      const createDto: CreateOccurrenceDto = {
+      const occurrenceData = {
         sspdsNumber: formData.sspdsNumber || undefined,
         startDateTime,
         endDateTime: formData.endDateTime ? new Date(formData.endDateTime).toISOString() : undefined,
@@ -181,18 +250,29 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
         responsibleAgents: formData.responsibleAgents || undefined,
       };
 
-      const savedOccurrence = await occurrencesApi.create(createDto);
+      let savedOccurrence: Occurrence;
       
-      toast({
-        title: "Sucesso",
-        description: `Ocorrência ${savedOccurrence.raNumber} registrada com sucesso!`,
-      });
+      if (isEditMode && occurrenceToEdit) {
+        // Atualizar ocorrência existente
+        savedOccurrence = await occurrencesApi.update(occurrenceToEdit.id, occurrenceData);
+        toast({
+          title: "Sucesso",
+          description: `Ocorrência ${savedOccurrence.raNumber} atualizada com sucesso!`,
+        });
+      } else {
+        // Criar nova ocorrência
+        savedOccurrence = await occurrencesApi.create(occurrenceData as CreateOccurrenceDto);
+        toast({
+          title: "Sucesso",
+          description: `Ocorrência ${savedOccurrence.raNumber} registrada com sucesso!`,
+        });
+      }
 
       onSave(savedOccurrence);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Não foi possível salvar a ocorrência. Tente novamente.";
+      const errorMessage = error instanceof Error ? error.message : `Não foi possível ${isEditMode ? 'atualizar' : 'salvar'} a ocorrência. Tente novamente.`;
       toast({
-        title: "Erro ao salvar",
+        title: `Erro ao ${isEditMode ? 'atualizar' : 'salvar'}`,
         description: errorMessage,
         variant: "destructive",
       });
@@ -240,7 +320,9 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
             
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <FileText className="w-5 h-5 text-primary shrink-0" />
-              <h1 className="text-lg font-bold text-foreground truncate">Nova Ocorrência</h1>
+              <h1 className="text-lg font-bold text-foreground truncate">
+                {isEditMode ? `Editar Ocorrência - R.A. ${occurrenceToEdit?.ra}` : 'Nova Ocorrência'}
+              </h1>
             </div>
 
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -300,6 +382,17 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
             </div>
             
             <div>
+              <Label htmlFor="endDateTime">Data/Hora Fim</Label>
+              <Input
+                id="endDateTime"
+                type="datetime-local"
+                value={formData.endDateTime}
+                onChange={(e) => updateFormData("endDateTime", e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            
+            <div>
               <Label className="mb-2 block">Origem do Chamado</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                 {origins.map((origin) => (
@@ -312,6 +405,29 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
                     <Label htmlFor={origin} className="text-sm font-normal cursor-pointer">{origin}</Label>
                   </div>
                 ))}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+              <div>
+                <Label htmlFor="cobradeCode">Código COBRADE</Label>
+                <Input
+                  id="cobradeCode"
+                  value={formData.cobradeCode}
+                  onChange={(e) => updateFormData("cobradeCode", e.target.value)}
+                  placeholder="Ex: 1.2.3.4"
+                  className="mt-1.5"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-8">
+                <Checkbox
+                  id="isConfidential"
+                  checked={formData.isConfidential}
+                  onCheckedChange={(checked) => updateFormData("isConfidential", checked === true)}
+                />
+                <Label htmlFor="isConfidential" className="text-sm font-normal cursor-pointer">
+                  Ocorrência Confidencial
+                </Label>
               </div>
             </div>
           </CardContent>
@@ -540,6 +656,48 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
               </div>
             )}
 
+            {/* Dados Ambientais */}
+            {(formData.category === "vistoria_ambiental" || formData.category === "incendio_vegetacao" || formData.category === "risco_vegetacao") && (
+              <div className="space-y-4 p-4 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/5 rounded-lg border-2 border-primary/20">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-secondary rounded-full"></div>
+                  Dados Ambientais
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="temperature">Temperatura (°C)</Label>
+                    <Input
+                      id="temperature"
+                      value={formData.temperature}
+                      onChange={(e) => updateFormData("temperature", e.target.value)}
+                      placeholder="Ex: 25"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="humidity">Umidade (%)</Label>
+                    <Input
+                      id="humidity"
+                      value={formData.humidity}
+                      onChange={(e) => updateFormData("humidity", e.target.value)}
+                      placeholder="Ex: 60"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-8">
+                    <Checkbox
+                      id="hasWaterBody"
+                      checked={formData.hasWaterBody}
+                      onCheckedChange={(checked) => updateFormData("hasWaterBody", checked === true)}
+                    />
+                    <Label htmlFor="hasWaterBody" className="text-sm font-normal cursor-pointer">
+                      Presença de Corpo d'Água
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="description">
                 Descrição/Caracterização da Situação <span className="text-destructive">*</span>
@@ -656,7 +814,10 @@ export function OccurrenceForm({ onBack, onSave }: OccurrenceFormProps) {
             
           >
             <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Salvando..." : "Salvar Ocorrência"}
+            {isLoading 
+              ? (isEditMode ? "Atualizando..." : "Salvando...") 
+              : (isEditMode ? "Atualizar Ocorrência" : "Salvar Ocorrência")
+            }
           </Button>
         </div>
       </form>

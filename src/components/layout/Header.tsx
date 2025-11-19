@@ -5,14 +5,22 @@ import Logo from "@/resources/Logo.svg";
 interface HeaderProps {
   user?: { name: string };
   onLogout?: () => void;
+  onLogoClick?: () => void;
 }
 
-export function Header({ user, onLogout }: HeaderProps) {
+export function Header({ user, onLogout, onLogoClick }: HeaderProps) {
+
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-3">
+          <div 
+            className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={onLogoClick}
+            role="button"
+            tabIndex={0}
+          >
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-primary to-primary-variant rounded-lg shadow-sm">
               <img src={Logo} alt="Logo" className="w-6 h-6" />
             </div>
