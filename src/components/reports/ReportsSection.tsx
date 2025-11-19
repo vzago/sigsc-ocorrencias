@@ -123,7 +123,7 @@ export const ReportsSection = () => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Include the entire end date
+    end.setHours(23, 59, 59, 999); 
 
     return occurrences.filter(occurrence => {
       const occurrenceDate = new Date(occurrence.dateTime);
