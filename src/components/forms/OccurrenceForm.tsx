@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, FileText } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, TreePine, Flame, Building2, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { occurrencesApi } from "@/services/occurrences.service";
 import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence as ApiOccurrence, OccurrenceDisplay } from "@/types/occurrence.types";
@@ -19,6 +19,7 @@ interface OccurrenceFormProps {
 export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const isEditMode = !!occurrenceToEdit;
   const [formData, setFormData] = useState({
     // Cabeçalho
@@ -76,6 +77,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
   useEffect(() => {
     const loadOccurrenceData = async () => {
       if (occurrenceToEdit) {
+        setIsLoadingData(true);
         try {
           const fullOccurrence = await occurrencesApi.getById(occurrenceToEdit.id);
           
@@ -133,6 +135,8 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
             variant: "destructive",
           });
           onBack();
+        } finally {
+          setIsLoadingData(false);
         }
       }
     };
@@ -306,6 +310,15 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
       default: return Building2;
     }
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground">Carregando dados da ocorrência...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsSection } from "@/components/reports/ReportsSection";
 import { occurrencesApi } from "@/services/occurrences.service";
 import { Occurrence as ApiOccurrence, OccurrenceStatus, OccurrenceCategory, FilterOccurrenceDto, OccurrenceDisplay } from "@/types/occurrence.types";
@@ -112,6 +113,7 @@ const statusColors = {
 export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }: DashboardProps) {
   const [occurrences, setOccurrences] = useState<OccurrenceDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -123,6 +125,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
   const { toast } = useToast();
 
   const loadStats = useCallback(async () => {
+    setIsLoadingStats(true);
     try {
       const [abertaRes, andamentoRes, fechadaRes, totalRes] = await Promise.all([
         occurrencesApi.getAll({ status: OccurrenceStatus.ABERTA, limit: 1 }),
@@ -139,6 +142,8 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
       });
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
+    } finally {
+      setIsLoadingStats(false);
     }
   }, []);
 
@@ -205,12 +210,20 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         <Card className="border-l-4 border-l-primary hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground mb-1">Total de Ocorrências</p>
-                <p className="text-3xl font-bold text-foreground">{stats.total}</p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-9 w-16 mb-1" />
+                ) : (
+                  <p className="text-3xl font-bold text-foreground">{stats.total}</p>
+                )}
               </div>
               <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
-                <FileText className="h-6 w-6 text-primary" />
+                {isLoadingStats ? (
+                  <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                ) : (
+                  <FileText className="h-6 w-6 text-primary" />
+                )}
               </div>
             </div>
           </CardContent>
@@ -219,17 +232,27 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         <Card className="border-l-4 border-l-destructive hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground mb-1">Abertas</p>
-                <p className="text-3xl font-bold text-foreground">{stats.aberta}</p>
-                {stats.total > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round((stats.aberta / stats.total) * 100)}% do total
-                  </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-9 w-16 mb-1" />
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-foreground">{stats.aberta}</p>
+                    {stats.total > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.round((stats.aberta / stats.total) * 100)}% do total
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex items-center justify-center w-12 h-12 bg-destructive/10 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+                {isLoadingStats ? (
+                  <Loader2 className="h-5 w-5 text-destructive animate-spin" />
+                ) : (
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                )}
               </div>
             </div>
           </CardContent>
@@ -238,17 +261,27 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         <Card className="border-l-4 border-l-warning hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground mb-1">Em Andamento</p>
-                <p className="text-3xl font-bold text-foreground">{stats.andamento}</p>
-                {stats.total > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round((stats.andamento / stats.total) * 100)}% do total
-                  </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-9 w-16 mb-1" />
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-foreground">{stats.andamento}</p>
+                    {stats.total > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.round((stats.andamento / stats.total) * 100)}% do total
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex items-center justify-center w-12 h-12 bg-warning/10 rounded-lg">
-                <Flame className="h-6 w-6 text-warning" />
+                {isLoadingStats ? (
+                  <Loader2 className="h-5 w-5 text-warning animate-spin" />
+                ) : (
+                  <Flame className="h-6 w-6 text-warning" />
+                )}
               </div>
             </div>
           </CardContent>
@@ -257,17 +290,27 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         <Card className="border-l-4 border-l-success hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground mb-1">Fechadas</p>
-                <p className="text-3xl font-bold text-foreground">{stats.fechada}</p>
-                {stats.total > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round((stats.fechada / stats.total) * 100)}% do total
-                  </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-9 w-16 mb-1" />
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-foreground">{stats.fechada}</p>
+                    {stats.total > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.round((stats.fechada / stats.total) * 100)}% do total
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex items-center justify-center w-12 h-12 bg-success/10 rounded-lg">
-                <TreePine className="h-6 w-6 text-success" />
+                {isLoadingStats ? (
+                  <Loader2 className="h-5 w-5 text-success animate-spin" />
+                ) : (
+                  <TreePine className="h-6 w-6 text-success" />
+                )}
               </div>
             </div>
           </CardContent>

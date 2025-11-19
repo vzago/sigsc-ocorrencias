@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Download, Calendar, Loader2 } from "lucide-react";
 import { generateReportPDF } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -242,7 +243,36 @@ export const ReportsSection = () => {
         </CardContent>
       </Card>
 
-      {reportStats && (
+      {isLoading && startDate && endDate ? (
+        <Card className="bg-card border border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Prévia do Relatório
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
+                <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                <Skeleton className="h-4 w-32 mx-auto" />
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
+                <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                <Skeleton className="h-4 w-32 mx-auto" />
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
+                <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                <Skeleton className="h-4 w-32 mx-auto" />
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
+              <span className="text-sm text-muted-foreground">Carregando ocorrências...</span>
+            </div>
+          </CardContent>
+        </Card>
+      ) : reportStats ? (
         <Card className="bg-card border border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -295,7 +325,7 @@ export const ReportsSection = () => {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 };

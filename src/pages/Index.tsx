@@ -9,6 +9,7 @@ import { occurrencesApi } from "@/services/occurrences.service";
 import { authApi } from "@/services/auth.service";
 import { Occurrence as ApiOccurrence, OccurrenceDisplay } from "@/types/occurrence.types";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 type User = {
   id: string;
@@ -88,6 +89,7 @@ const Index = () => {
   const [selectedOccurrence, setSelectedOccurrence] = useState<OccurrenceDisplay | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [isLoadingOccurrence, setIsLoadingOccurrence] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -123,6 +125,7 @@ const Index = () => {
   };
 
   const handleViewOccurrence = async (occurrence: OccurrenceDisplay) => {
+    setIsLoadingOccurrence(true);
     try {
       const fullOccurrence = await occurrencesApi.getById(occurrence.id);
       const convertedOccurrence = convertApiOccurrenceToDetails(fullOccurrence);
@@ -135,6 +138,8 @@ const Index = () => {
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingOccurrence(false);
     }
   };
 
@@ -144,7 +149,7 @@ const Index = () => {
     setCurrentView("dashboard");
   };
 
-  const handleEditOccurrence = (occurrence: Occurrence) => {
+  const handleEditOccurrence = (occurrence: OccurrenceDisplay) => {
     setSelectedOccurrence(occurrence);
     setCurrentView("edit-occurrence");
   };
@@ -182,39 +187,48 @@ const Index = () => {
       <Header user={user} onLogout={handleLogout} onLogoClick={handleBackToDashboard}/>
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentView === "dashboard" && (
-          <Dashboard 
-            onNewOccurrence={handleNewOccurrence}
-            onViewOccurrence={handleViewOccurrence}
-            refreshTrigger={refreshTrigger}
-          />
-        )}
-        
-        {currentView === "new-occurrence" && (
-          <OccurrenceForm 
-            onBack={handleBackToDashboard}
-            onSave={handleSaveOccurrence}
-          />
-        )}
-        
-        {currentView === "view-occurrence" && selectedOccurrence && (
-          <OccurrenceDetails 
-            occurrence={selectedOccurrence}
-            onBack={handleBackToDashboard}
-            onEdit={handleEditOccurrence}
-            onStatusChange={(updatedOccurrence) => {
-              setSelectedOccurrence(updatedOccurrence);
-              setRefreshTrigger(prev => prev + 1);
-            }}
-          />
-        )}
-        
-        {currentView === "edit-occurrence" && selectedOccurrence && (
-          <OccurrenceForm 
-            onBack={() => setCurrentView("view-occurrence")}
-            onSave={handleUpdateOccurrence}
-            occurrenceToEdit={selectedOccurrence}
-          />
+        {isLoadingOccurrence ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p className="text-sm text-muted-foreground">Carregando detalhes da ocorrência...</p>
+          </div>
+        ) : (
+          <>
+            {currentView === "dashboard" && (
+              <Dashboard 
+                onNewOccurrence={handleNewOccurrence}
+                onViewOccurrence={handleViewOccurrence}
+                refreshTrigger={refreshTrigger}
+              />
+            )}
+            
+            {currentView === "new-occurrence" && (
+              <OccurrenceForm 
+                onBack={handleBackToDashboard}
+                onSave={handleSaveOccurrence}
+              />
+            )}
+            
+            {currentView === "view-occurrence" && selectedOccurrence && (
+              <OccurrenceDetails 
+                occurrence={selectedOccurrence}
+                onBack={handleBackToDashboard}
+                onEdit={handleEditOccurrence}
+                onStatusChange={(updatedOccurrence) => {
+                  setSelectedOccurrence(updatedOccurrence);
+                  setRefreshTrigger(prev => prev + 1);
+                }}
+              />
+            )}
+            
+            {currentView === "edit-occurrence" && selectedOccurrence && (
+              <OccurrenceForm 
+                onBack={() => setCurrentView("view-occurrence")}
+                onSave={handleUpdateOccurrence}
+                occurrenceToEdit={selectedOccurrence}
+              />
+            )}
+          </>
         )}
       </main>
     </div>
