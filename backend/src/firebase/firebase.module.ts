@@ -11,44 +11,62 @@ import * as path from 'path';
     {
       provide: 'FIREBASE_ADMIN',
       useFactory: (configService: ConfigService) => {
-        if (!admin.apps.length) {
-          const serviceAccountPath = configService.get<string>('FIREBASE_CREDENTIALS_BASE64');
-          const serviceAccount = configService.get<string>('FIREBASE_SERVICE_ACCOUNT');
-          
-          let serviceAccountJson: any = null;
+        // Evita iniciar duas vezes se o módulo for carregado novamente
+        if (admin.apps.length) {
+          return admin.app();
+        }
 
-          if (serviceAccountPath) {
-            const filePath = path.resolve(process.cwd(), serviceAccountPath);
-            if (fs.existsSync(filePath)) {
+        let serviceAccountJson: any = null;
+
+        // 1. TENTA LER VARIÁVEL DE PRODUÇÃO (RENDER - BASE64)
+        const base64Credentials = configService.get<string>('FIREBASE_CREDENTIALS_BASE64');
+        
+        // 2. TENTA LER VARIÁVEL LOCAL (ARQUIVO JSON)
+        // Nota: No seu .env o nome é FIREBASE_SERVICE_ACCOUNT_PATH, ajustei aqui
+        const serviceAccountPath = configService.get<string>('FIREBASE_SERVICE_ACCOUNT_PATH');
+
+        // --- LÓGICA DE DECISÃO ---
+        
+        if (base64Credentials) {
+          // CENÁRIO 1: Estamos no Render (tem base64)
+          try {
+            const buffer = Buffer.from(base64Credentials, 'base64');
+            serviceAccountJson = JSON.parse(buffer.toString());
+            console.log('✅ [Firebase] Credenciais carregadas via Base64');
+          } catch (error) {
+            console.error('❌ [Firebase] Erro ao decodificar Base64:', error);
+          }
+        } else if (serviceAccountPath) {
+          // CENÁRIO 2: Estamos Local (tem caminho do arquivo)
+          const filePath = path.resolve(process.cwd(), serviceAccountPath);
+          if (fs.existsSync(filePath)) {
+            try {
               const fileContent = fs.readFileSync(filePath, 'utf8');
               serviceAccountJson = JSON.parse(fileContent);
-            } else {
-              throw new Error(`Arquivo de service account não encontrado em: ${filePath}`);
-            }
-          } else if (serviceAccount) {
-            try {
-              serviceAccountJson = JSON.parse(serviceAccount);
+              console.log('✅ [Firebase] Credenciais carregadas via Arquivo Local');
             } catch (error) {
-              throw new Error('Erro ao fazer parse do FIREBASE_SERVICE_ACCOUNT. Verifique se o JSON está correto.');
+               console.error('❌ [Firebase] Erro ao ler arquivo JSON local:', error);
             }
-          }
-
-          if (serviceAccountJson) {
-            admin.initializeApp({
-              credential: admin.credential.cert(serviceAccountJson),
-            });
           } else {
-            const projectId = configService.get<string>('FIREBASE_PROJECT_ID');
-            if (projectId) {
-              admin.initializeApp({
-                projectId,
-              });
-            } else {
-              throw new Error('Configuração do Firebase não encontrada. Configure FIREBASE_SERVICE_ACCOUNT, FIREBASE_CREDENTIALS_BASE64 ou FIREBASE_PROJECT_ID');
-            }
+            console.warn(`⚠️ [Firebase] Arquivo não encontrado no caminho: ${filePath}`);
           }
         }
-        return admin;
+
+        // --- INICIALIZAÇÃO ---
+
+        if (serviceAccountJson) {
+          return admin.initializeApp({
+            credential: admin.credential.cert(serviceAccountJson),
+          });
+        } else {
+           // Fallback final: Tentar usar projectId se não achou credenciais (para emuladores ou Google Cloud nativo)
+           const projectId = configService.get<string>('FIREBASE_PROJECT_ID');
+           if (projectId) {
+              return admin.initializeApp({ projectId });
+           }
+           
+           throw new Error('FATAL: Nenhuma credencial do Firebase encontrada (Nem Base64, nem Arquivo). Verifique as variáveis de ambiente.');
+        }
       },
       inject: [ConfigService],
     },
@@ -56,4 +74,3 @@ import * as path from 'path';
   exports: ['FIREBASE_ADMIN'],
 })
 export class FirebaseModule {}
-
