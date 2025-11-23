@@ -2,6 +2,13 @@ import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { OccurrenceDisplay } from '@/types/occurrence.types';
 
+const categoryLabels: Record<string, string> = {
+  vistoria_ambiental: "Vistoria Ambiental",
+  risco_vegetacao: "Risco - Vegetação/Árvore",
+  incendio_vegetacao: "Incêndio em Vegetação",
+  outras: "Outras Ocorrências"
+};
+
 const styles = StyleSheet.create({
   page: {
     padding: 30,
@@ -176,7 +183,7 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
             </View>
             {Object.entries(reportData.occurrencesByCategory).map(([category, count], index) => (
               <View key={index} style={styles.tableRow}>
-                <Text style={{ width: '70%', paddingLeft: 4 }}>{category}</Text>
+                <Text style={{ width: '70%', paddingLeft: 4 }}>{categoryLabels[category] || category}</Text>
                 <Text style={{ width: '30%', textAlign: 'right', paddingRight: 4 }}>{count}</Text>
               </View>
             ))}
@@ -188,13 +195,24 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
         {reportData.occurrences.map((occ, index) => (
           <View key={occ.id} style={styles.occurrenceItem} wrap={false}>
             <View style={styles.occHeader}>
-              <Text style={styles.occTitle}>{index + 1}. R.A. {occ.ra} - {occ.category}</Text>
+              <Text style={styles.occTitle}>{index + 1}. R.A. {occ.ra} - {categoryLabels[occ.category] || occ.category}</Text>
               <Text style={styles.occDate}>{occ.dateTime}</Text>
             </View>
-            <Text style={{ fontSize: 8, marginBottom: 2 }}>{occ.address}</Text>
+            <Text style={{ fontSize: 8, marginBottom: 2, color: '#64748b' }}>
+              {occ.address}{occ.reference ? ` - Ref: ${occ.reference}` : ''}
+            </Text>
+            {occ.institution && (
+              <Text style={{ fontSize: 7, marginBottom: 2, color: '#64748b' }}>Instituição: {occ.institution}</Text>
+            )}
+            {occ.origins && occ.origins.length > 0 && (
+              <Text style={{ fontSize: 7, marginBottom: 2, color: '#64748b' }}>Origem: {occ.origins.join(', ')}</Text>
+            )}
             <Text style={styles.occDesc}>
               {occ.description}
             </Text>
+            {occ.responsibleAgents && (
+              <Text style={{ fontSize: 7, marginTop: 2, color: '#475569', fontWeight: 'bold' }}>Responsáveis: {occ.responsibleAgents}</Text>
+            )}
           </View>
         ))}
 
@@ -206,4 +224,3 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
     </Document>
   );
 };
-

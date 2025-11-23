@@ -71,7 +71,9 @@ const convertApiOccurrence = (apiOccurrence: ApiOccurrence): OccurrenceDisplay =
     detailedReport: apiOccurrence.detailedReport,
     observations: apiOccurrence.observations,
     responsibleAgents: apiOccurrence.responsibleAgents,
-    startDateTimeIso: typeof apiOccurrence.startDateTime === 'string' ? apiOccurrence.startDateTime : apiOccurrence.startDateTime.toISOString(),
+    startDateTimeIso: apiOccurrence.startDateTime
+      ? (typeof apiOccurrence.startDateTime === 'string' ? apiOccurrence.startDateTime : apiOccurrence.startDateTime.toISOString())
+      : new Date().toISOString(),
   };
 };
 
@@ -88,16 +90,10 @@ export const ReportsSection = () => {
 
     setIsLoading(true);
     try {
-      // Format dates to DD/MM/YYYY for the API
-      const formatDateForApi = (dateStr: string) => {
-        if (!dateStr) return undefined;
-        const [year, month, day] = dateStr.split('-');
-        return `${day}/${month}/${year}`;
-      };
-
+      // Send dates in ISO format (YYYY-MM-DD) which is correctly parsed by backend
       const response = await occurrencesApi.getAll({
-        startDate: formatDateForApi(startDate),
-        endDate: formatDateForApi(endDate),
+        startDate: startDate, // Already in YYYY-MM-DD format from input[type="date"]
+        endDate: endDate,     // Already in YYYY-MM-DD format from input[type="date"]
         limit: 10000,
       });
       const convertedOccurrences = Array.isArray(response.data)

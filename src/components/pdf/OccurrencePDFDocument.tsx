@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 10,
     color: '#64748b', // slate-500
+    marginTop: 8,
   },
   raNumber: {
     fontSize: 14,
@@ -47,6 +48,7 @@ const styles = StyleSheet.create({
   dateGenerated: {
     fontSize: 8,
     color: '#94a3b8',
+    marginTop: 8,
   },
   statusBanner: {
     flexDirection: 'row',
@@ -210,6 +212,20 @@ export const OccurrencePDFDocument: React.FC<OccurrencePDFDocumentProps> = ({ oc
                 </View>
               )}
 
+              {occurrence.endDateTime && (
+                <View style={styles.field}>
+                  <Text style={styles.label}>Data/Hora Fim</Text>
+                  <Text style={styles.value}>{occurrence.endDateTime}</Text>
+                </View>
+              )}
+
+              {occurrence.isConfidential !== undefined && (
+                <View style={styles.field}>
+                  <Text style={styles.label}>Confidencial</Text>
+                  <Text style={styles.value}>{occurrence.isConfidential ? 'Sim' : 'Não'}</Text>
+                </View>
+              )}
+
               {occurrence.origins && occurrence.origins.length > 0 && (
                 <View style={styles.field}>
                   <Text style={styles.label}>Origem do Chamado</Text>
@@ -255,10 +271,15 @@ export const OccurrencePDFDocument: React.FC<OccurrencePDFDocumentProps> = ({ oc
                 </View>
               )}
 
-              {(occurrence.latitude || occurrence.longitude) && (
+              {(occurrence.latitude || occurrence.longitude || occurrence.altitude) && (
                 <View style={styles.field}>
                   <Text style={styles.label}>Coordenadas</Text>
-                  <Text style={styles.value}>{occurrence.latitude}, {occurrence.longitude}</Text>
+                  <Text style={styles.value}>
+                    {occurrence.latitude && `Lat: ${occurrence.latitude}`}
+                    {occurrence.latitude && occurrence.longitude && ' / '}
+                    {occurrence.longitude && `Long: ${occurrence.longitude}`}
+                    {occurrence.altitude && ` / Alt: ${occurrence.altitude}m`}
+                  </Text>
                 </View>
               )}
             </View>
@@ -295,7 +316,7 @@ export const OccurrencePDFDocument: React.FC<OccurrencePDFDocumentProps> = ({ oc
 
           {/* Dados Específicos */}
           <View style={styles.half}>
-            {(occurrence.areaType || occurrence.affectedArea || occurrence.temperature || occurrence.humidity || occurrence.impactType) && (
+            {(occurrence.areaType || occurrence.affectedArea || occurrence.temperature || occurrence.humidity || occurrence.impactType || occurrence.impactMagnitude || occurrence.hasWaterBody !== undefined) && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Dados Específicos</Text>
 
@@ -324,10 +345,24 @@ export const OccurrencePDFDocument: React.FC<OccurrencePDFDocumentProps> = ({ oc
                   </View>
                 )}
 
+                {occurrence.hasWaterBody !== undefined && (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Presença de Corpo d'Água</Text>
+                    <Text style={styles.value}>{occurrence.hasWaterBody ? 'Sim' : 'Não'}</Text>
+                  </View>
+                )}
+
                 {occurrence.impactType && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>Impacto</Text>
+                    <Text style={styles.label}>Tipo de Impacto</Text>
                     <Text style={styles.value}>{occurrence.impactType}</Text>
+                  </View>
+                )}
+
+                {occurrence.impactMagnitude && (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Magnitude do Impacto</Text>
+                    <Text style={styles.value}>{occurrence.impactMagnitude}</Text>
                   </View>
                 )}
               </View>
