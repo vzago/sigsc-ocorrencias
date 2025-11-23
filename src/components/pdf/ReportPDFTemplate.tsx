@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Svg, Rect } from '@react-pdf/renderer';
 import { OccurrenceDisplay } from '@/types/occurrence.types';
 
 const categoryLabels: Record<string, string> = {
@@ -7,6 +7,13 @@ const categoryLabels: Record<string, string> = {
   risco_vegetacao: "Risco - Vegetação/Árvore",
   incendio_vegetacao: "Incêndio em Vegetação",
   outras: "Outras Ocorrências"
+};
+
+const categoryColors: Record<string, string> = {
+  vistoria_ambiental: "#10b981",
+  risco_vegetacao: "#f59e0b",
+  incendio_vegetacao: "#ef4444",
+  outras: "#6366f1"
 };
 
 const styles = StyleSheet.create({
@@ -133,7 +140,89 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#94a3b8',
   },
+  chartContainer: {
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  chartTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 5,
+  },
 });
+
+// Componente de gráfico de barras
+interface BarChartProps {
+  data: Record<string, number>;
+}
+
+const BarChart: React.FC<BarChartProps> = ({ data }) => {
+  const entries = Object.entries(data);
+  const maxValue = Math.max(...entries.map(([, value]) => value));
+
+  const barHeight = 20;
+  const maxBarWidth = 280;
+
+  return (
+    <View style={{ marginTop: 10 }}>
+      {entries.map(([category, count]) => {
+        const barWidth = (count / maxValue) * maxBarWidth;
+        const color = categoryColors[category] || '#6366f1';
+
+        return (
+          <View
+            key={category}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 6,
+              gap: 8
+            }}
+          >
+            {/* Category label */}
+            <Text style={{
+              width: 180,
+              fontSize: 8,
+              color: '#475569'
+            }}>
+              {categoryLabels[category] || category}
+            </Text>
+
+            {/* Bar container */}
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              <Svg width={barWidth} height={barHeight}>
+                <Rect
+                  x={0}
+                  y={0}
+                  width={barWidth}
+                  height={barHeight}
+                  fill={color}
+                  rx={2}
+                />
+              </Svg>
+
+              {/* Value label */}
+              <Text style={{
+                marginLeft: 8,
+                fontSize: 9,
+                fontWeight: 'bold',
+                color: '#0f172a',
+                minWidth: 20
+              }}>
+                {count}
+              </Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
 
 interface ReportPDFTemplateProps {
   reportData: {
@@ -175,21 +264,10 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
           </View>
         </View>
 
-        {/* Categories Table (Replacing Pie Chart) */}
-        <View>
-          <Text style={styles.sectionTitle}>Distribuição por Categoria</Text>
-          <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={{ width: '70%', paddingLeft: 4 }}>Categoria</Text>
-              <Text style={{ width: '30%', textAlign: 'right', paddingRight: 4 }}>Quantidade</Text>
-            </View>
-            {Object.entries(reportData.occurrencesByCategory).map(([category, count], index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={{ width: '70%', paddingLeft: 4 }}>{categoryLabels[category] || category}</Text>
-                <Text style={{ width: '30%', textAlign: 'right', paddingRight: 4 }}>{count}</Text>
-              </View>
-            ))}
-          </View>
+        {/* Bar Chart */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Distribuição por Categoria</Text>
+          <BarChart data={reportData.occurrencesByCategory} />
         </View>
 
         {/* Detailed List */}
