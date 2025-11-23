@@ -102,7 +102,7 @@ export interface CreateOccurrenceDto {
   status?: OccurrenceStatus;
 }
 
-export interface UpdateOccurrenceDto extends Partial<CreateOccurrenceDto> {}
+export interface UpdateOccurrenceDto extends Partial<CreateOccurrenceDto> { }
 
 export interface FilterOccurrenceDto {
   category?: OccurrenceCategory;
@@ -160,5 +160,6 @@ export interface OccurrenceDisplay {
   detailedReport?: string;
   observations?: string;
   responsibleAgents?: string;
+  startDateTimeIso?: string;
 }
 
