@@ -187,9 +187,14 @@ function randomPhone() {
 
 // Função para gerar coordenadas (São Carlos - SP aproximadamente)
 function randomCoordinates() {
+  // Calculamos os valores brutos primeiro
+  const rawLat = -22.0 + (Math.random() * 0.1 - 0.05);
+  const rawLong = -47.89 + (Math.random() * 0.1 - 0.05);
+
   return {
-    latitude: -22.0 + (Math.random() * 0.1 - 0.05),
-    longitude: -47.89 + (Math.random() * 0.1 - 0.05),
+    // MODIFICADO: parseFloat(numero.toFixed(X)) trunca as casas decimais e garante que é Number
+    latitude: parseFloat(rawLat.toFixed(6)),
+    longitude: parseFloat(rawLong.toFixed(6)),
     altitude: 850 + Math.floor(Math.random() * 100)
   };
 }
@@ -233,7 +238,7 @@ async function createOccurrence(token, data) {
 // Função para gerar uma ocorrência aleatória
 function generateOccurrence(index) {
   const category = randomChoice(categories);
-  const startDate = randomDate(new Date('2024-01-01'), new Date('2025-10-31'));
+  const startDate = randomDate(new Date('2023-01-01'), new Date('2025-10-31'));
   const numOrigins = Math.floor(Math.random() * 3) + 1;
   const selectedOrigins = [];
 

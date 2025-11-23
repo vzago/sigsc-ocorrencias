@@ -329,18 +329,18 @@ export const OccurrencePDFDocument: React.FC<OccurrencePDFDocumentProps> = ({ oc
 
                 {occurrence.affectedArea && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>Área Atingida</Text>
-                    <Text style={styles.value}>{occurrence.affectedArea} m²</Text>
+                    <Text style={styles.label}>Área Atingida (m²)</Text>
+                    <Text style={styles.value}>{occurrence.affectedArea}</Text>
                   </View>
                 )}
 
                 {(occurrence.temperature || occurrence.humidity) && (
                   <View style={styles.field}>
-                    <Text style={styles.label}>Clima</Text>
+                    <Text style={styles.label}>Clima (°C) / Umidade (%)</Text>
                     <Text style={styles.value}>
-                      {occurrence.temperature ? `${occurrence.temperature}°C` : ''}
+                      {occurrence.temperature ? `${occurrence.temperature}` : ''}
                       {occurrence.temperature && occurrence.humidity ? ' / ' : ''}
-                      {occurrence.humidity ? `${occurrence.humidity}%` : ''}
+                      {occurrence.humidity ? `${occurrence.humidity}` : ''}
                     </Text>
                   </View>
                 )}
