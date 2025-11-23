@@ -1,115 +1,109 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
+import { OccurrenceDisplay } from '@/types/occurrence.types';
+import { OccurrencePDFTemplate } from '@/components/pdf/OccurrencePDFTemplate';
+import { ReportPDFTemplate } from '@/components/pdf/ReportPDFTemplate';
 
-export interface OccurrenceForPDF {
-  id: string;
-  ra: string;
-  dateTime: string;
-  category: string;
-  status: string;
-  address: string;
-  requester: string;
-  description: string;
-  expandedData?: Record<string, string | number>;
-}
+// Helper function to render component, capture it, and generate PDF
+const generatePDFFromComponent = async (
+  component: React.ReactNode,
+  filename: string
+): Promise<void> => {
+  // Create a container element
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.top = '-9999px';
+  container.style.left = '-9999px';
+  container.style.width = '210mm'; // A4 width
+  document.body.appendChild(container);
 
-export const generateOccurrencePDF = async (occurrence: OccurrenceForPDF): Promise<void> => {
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  try {
+    // Render the component
+    const root = createRoot(container);
+    root.render(component);
 
-  // Header
-  pdf.setFontSize(18);
-  pdf.text('DEFESA CIVIL DE SÃO CARLOS', 105, 20, { align: 'center' });
-  pdf.setFontSize(14);
-  pdf.text('Sistema de Registro Digital de Ocorrências', 105, 30, { align: 'center' });
+    // Wait for render and potential animations (like charts)
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Dados principais
-  pdf.setFontSize(12);
-  let yPosition = 50;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+    const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+    const margin = 10; // 10mm margin
+    const contentWidth = pdfWidth - (margin * 2);
+    const contentHeight = pdfHeight - (margin * 2);
 
-  pdf.text(`Registro de Atendimento (R.A.): ${occurrence.ra}`, 20, yPosition);
-  yPosition += 10;
+    let currentY = margin;
 
-  pdf.text(`Data/Hora: ${new Date(occurrence.dateTime).toLocaleString('pt-BR')}`, 20, yPosition);
-  yPosition += 10;
+    // Find the main content wrapper
+    const contentWrapper = container.firstElementChild as HTMLElement;
+    if (!contentWrapper) {
+      throw new Error("PDF content wrapper not found");
+    }
 
-  pdf.text(`Categoria: ${occurrence.category}`, 20, yPosition);
-  yPosition += 10;
+    // Iterate over direct children to handle pagination
+    const children = Array.from(contentWrapper.children) as HTMLElement[];
 
-  pdf.text(`Status: ${occurrence.status}`, 20, yPosition);
-  yPosition += 10;
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
 
-  pdf.text(`Endereço: ${occurrence.address}`, 20, yPosition);
-  yPosition += 15;
-
-  // Dados do Solicitante
-  pdf.setFontSize(14);
-  pdf.text('DADOS DO SOLICITANTE', 20, yPosition);
-  yPosition += 10;
-
-  pdf.setFontSize(12);
-  pdf.text(`Nome: ${occurrence.requester}`, 20, yPosition);
-  yPosition += 15;
-
-  // Descrição
-  pdf.setFontSize(14);
-  pdf.text('DESCRIÇÃO DA OCORRÊNCIA', 20, yPosition);
-  yPosition += 10;
-
-  pdf.setFontSize(12);
-  const splitDescription = pdf.splitTextToSize(occurrence.description, 170);
-  pdf.text(splitDescription, 20, yPosition);
-  yPosition += splitDescription.length * 5 + 15;
-
-  // Dados específicos por categoria
-  if (occurrence.expandedData) {
-    pdf.setFontSize(14);
-    pdf.text('DADOS ESPECÍFICOS', 20, yPosition);
-    yPosition += 10;
-
-    pdf.setFontSize(12);
-
-    Object.entries(occurrence.expandedData).forEach(([key, value]) => {
-      pdf.setFont("helvetica", "bold");
-      const keyText = `${key}:`;
-      const keyWidth = pdf.getTextWidth(keyText);
-
-      // Verificar se cabe na página atual (estimativa inicial)
-      if (yPosition > 275) {
-        pdf.addPage();
-        yPosition = 20;
+      // Capture the child element
+      if (child.offsetHeight === 0 || child.offsetWidth === 0) {
+        continue;
       }
 
-      pdf.text(keyText, 20, yPosition);
+      const canvas = await html2canvas(child, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
 
-      pdf.setFont("helvetica", "normal");
-      const valueStr = String(value);
-      const splitValue = pdf.splitTextToSize(valueStr, 170 - keyWidth - 2);
-
-      // Se o valor for muito grande e causar quebra de página no meio
-      if (yPosition + (splitValue.length * 5) > 285) {
-        pdf.addPage();
-        yPosition = 20;
-        pdf.setFont("helvetica", "bold");
-        pdf.text(keyText, 20, yPosition);
-        pdf.setFont("helvetica", "normal");
+      if (canvas.width === 0 || canvas.height === 0) {
+        continue;
       }
 
-      pdf.text(splitValue, 20 + keyWidth + 2, yPosition);
-      yPosition += (splitValue.length * 5) + 4;
-    });
-  }
+      const imgData = canvas.toDataURL('image/png');
 
-  // Footer
-  const pageCount = pdf.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    pdf.setPage(i);
-    pdf.setFontSize(10);
-    pdf.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
-    pdf.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 20, 285);
-  }
+      // Verify if we got a valid data URL
+      if (imgData === 'data:,') {
+        continue;
+      }
 
-  // Download
-  pdf.save(`Ocorrencia_${occurrence.ra}_${new Date().toISOString().split('T')[0]}.pdf`);
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Check if we need a new page
+      if (currentY + imgHeight > pdfHeight - margin) {
+        pdf.addPage();
+        currentY = margin;
+      }
+
+      try {
+        pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 5; // Add 5mm gap between elements
+      } catch (e) {
+        console.warn('Failed to add image to PDF:', e);
+      }
+    }
+
+    pdf.save(filename);
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw error;
+  } finally {
+    // Cleanup
+    document.body.removeChild(container);
+  }
+};
+
+export const generateOccurrencePDF = async (occurrence: OccurrenceDisplay): Promise<void> => {
+  await generatePDFFromComponent(
+    React.createElement(OccurrencePDFTemplate, { occurrence }),
+    `Ocorrencia_${occurrence.ra}_${new Date().toISOString().split('T')[0]}.pdf`
+  );
 };
 
 export const generateReportPDF = async (
@@ -118,88 +112,13 @@ export const generateReportPDF = async (
     endDate: string;
     totalOccurrences: number;
     occurrencesByCategory: Record<string, number>;
-    occurrences: OccurrenceForPDF[];
+    occurrences: OccurrenceDisplay[];
   }
 ): Promise<void> => {
-  const pdf = new jsPDF('p', 'mm', 'a4');
-
-  // Header
-  pdf.setFontSize(18);
-  pdf.text('DEFESA CIVIL DE SÃO CARLOS', 105, 20, { align: 'center' });
-  pdf.setFontSize(14);
-  pdf.text('Relatório Consolidado de Ocorrências', 105, 30, { align: 'center' });
-
-  let yPosition = 50;
-
-  // Período
-  pdf.setFontSize(12);
-  pdf.text(`Período: ${reportData.startDate} a ${reportData.endDate}`, 20, yPosition);
-  yPosition += 15;
-
-  // Estatísticas gerais
-  pdf.setFontSize(14);
-  pdf.text('ESTATÍSTICAS GERAIS', 20, yPosition);
-  yPosition += 10;
-
-  pdf.setFontSize(12);
-  pdf.text(`Total de Ocorrências: ${reportData.totalOccurrences}`, 20, yPosition);
-  yPosition += 15;
-
-  // Por categoria
-  pdf.setFontSize(14);
-  pdf.text('OCORRÊNCIAS POR CATEGORIA', 20, yPosition);
-  yPosition += 10;
-
-  pdf.setFontSize(12);
-  Object.entries(reportData.occurrencesByCategory).forEach(([category, count]) => {
-    if (yPosition > 270) {
-      pdf.addPage();
-      yPosition = 20;
-    }
-    pdf.text(`${category}: ${count}`, 20, yPosition);
-    yPosition += 8;
-  });
-
-  yPosition += 10;
-
-  // Lista de ocorrências
-  if (yPosition > 250) {
-    pdf.addPage();
-    yPosition = 20;
-  }
-
-  pdf.setFontSize(14);
-  pdf.text('DETALHAMENTO DAS OCORRÊNCIAS', 20, yPosition);
-  yPosition += 10;
-
-  pdf.setFontSize(10);
-  reportData.occurrences.forEach((occurrence, index) => {
-    if (yPosition > 270) {
-      pdf.addPage();
-      yPosition = 20;
-    }
-
-    pdf.text(`${index + 1}. R.A.: ${occurrence.ra}`, 20, yPosition);
-    yPosition += 5;
-    pdf.text(`   Data: ${new Date(occurrence.dateTime).toLocaleDateString('pt-BR')}`, 20, yPosition);
-    yPosition += 5;
-    pdf.text(`   Categoria: ${occurrence.category}`, 20, yPosition);
-    yPosition += 5;
-    pdf.text(`   Endereço: ${occurrence.address}`, 20, yPosition);
-    yPosition += 8;
-  });
-
-  // Footer
-  const pageCount = pdf.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    pdf.setPage(i);
-    pdf.setFontSize(10);
-    pdf.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
-    pdf.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 20, 285);
-  }
-
-  // Download
-  pdf.save(`Relatorio_Ocorrencias_${reportData.startDate}_${reportData.endDate}.pdf`);
+  await generatePDFFromComponent(
+    React.createElement(ReportPDFTemplate, { reportData }),
+    `Relatorio_Ocorrencias_${reportData.startDate}_${reportData.endDate}.pdf`
+  );
 };
 
 export const generateElementToPDF = async (elementId: string, filename: string): Promise<void> => {
@@ -218,7 +137,7 @@ export const generateElementToPDF = async (elementId: string, filename: string):
   const pdf = new jsPDF('p', 'mm', 'a4');
 
   const imgWidth = 210;
-  const pageHeight = 295;
+  const pageHeight = 297;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
   let heightLeft = imgHeight;
 

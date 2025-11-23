@@ -88,9 +88,16 @@ export const ReportsSection = () => {
 
     setIsLoading(true);
     try {
+      // Format dates to DD/MM/YYYY for the API
+      const formatDateForApi = (dateStr: string) => {
+        if (!dateStr) return undefined;
+        const [year, month, day] = dateStr.split('-');
+        return `${day}/${month}/${year}`;
+      };
+
       const response = await occurrencesApi.getAll({
-        startDate,
-        endDate,
+        startDate: formatDateForApi(startDate),
+        endDate: formatDateForApi(endDate),
         limit: 10000,
       });
       const convertedOccurrences = Array.isArray(response.data)
