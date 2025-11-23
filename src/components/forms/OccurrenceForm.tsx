@@ -14,6 +14,7 @@ import { CreateOccurrenceDto, OccurrenceCategory, OriginType, Occurrence as ApiO
 interface OccurrenceFormProps {
   onBack: () => void;
   onSave: (data: ApiOccurrence) => void;
+  occurrenceToEdit?: OccurrenceDisplay;
 }
 
 export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceFormProps) {
@@ -28,7 +29,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
     startDateTime: "",
     endDateTime: "",
     origins: [] as string[],
-    
+
     // Dados do Atendimento
     latitude: "",
     longitude: "",
@@ -37,19 +38,19 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
     isConfidential: false,
     address: "",
     number: "",
-    neighborhood: "", 
+    neighborhood: "",
     reference: "",
-    
+
     // Solicitante
     requesterName: "",
     institution: "",
     phone: "",
-    
+
     // Classificação
     category: "",
     subcategory: "",
     description: "",
-    
+
     // Específicos por categoria
     areaType: "",
     affectedArea: "",
@@ -58,15 +59,15 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
     hasWaterBody: false,
     impactType: "",
     impactMagnitude: "",
-    
+
     // Providências
     teamActions: [] as string[],
     activatedOrganisms: [] as string[],
-    
+
     // Recursos
-    vehicles: [],
+    vehicles: [] as ({ name: string } | string)[],
     materials: "",
-    
+
     // Relatos
     detailedReport: "",
     observations: "",
@@ -80,7 +81,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
         setIsLoadingData(true);
         try {
           const fullOccurrence = await occurrencesApi.getById(occurrenceToEdit.id);
-          
+
           // Formatar data para input datetime-local
           const formatDateForInput = (dateString: string | Date) => {
             const date = new Date(dateString);
@@ -160,7 +161,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
 
   const origins = [
     "Processo",
-    "E-mail/WhatsApp", 
+    "E-mail/WhatsApp",
     "Via Fone",
     "Via Ofício",
     "Corpo de Bombeiros"
@@ -190,7 +191,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.category || !formData.requesterName || !formData.address) {
       toast({
         title: "Erro de validação",
@@ -204,7 +205,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
 
     try {
       const now = new Date();
-      const startDateTime = formData.startDateTime 
+      const startDateTime = formData.startDateTime
         ? new Date(formData.startDateTime).toISOString()
         : now.toISOString();
 
@@ -239,23 +240,23 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
         },
         actions: formData.teamActions.length > 0 || formData.activatedOrganisms.length > 0
           ? [
-              ...formData.teamActions.map(action => ({ teamAction: action })),
-              ...formData.activatedOrganisms.map(organism => ({ activatedOrganism: organism }))
-            ]
+            ...formData.teamActions.map(action => ({ teamAction: action })),
+            ...formData.activatedOrganisms.map(organism => ({ activatedOrganism: organism }))
+          ]
           : undefined,
         resources: formData.vehicles.length > 0 || formData.materials
           ? [
-              ...formData.vehicles.map((vehicle: { name?: string } | string) => ({ vehicle: typeof vehicle === 'string' ? vehicle : (vehicle.name || '') })),
-              ...(formData.materials ? [{ materials: formData.materials }] : [])
-            ]
+            ...formData.vehicles.map((vehicle: { name?: string } | string) => ({ vehicle: typeof vehicle === 'string' ? vehicle : (vehicle.name || '') })),
+            ...(formData.materials ? [{ materials: formData.materials }] : [])
+          ]
           : undefined,
         detailedReport: formData.detailedReport || undefined,
         observations: formData.observations || undefined,
         responsibleAgents: formData.responsibleAgents || undefined,
       };
 
-      let savedOccurrence: Occurrence;
-      
+      let savedOccurrence: ApiOccurrence;
+
       if (isEditMode && occurrenceToEdit) {
         // Atualizar ocorrência existente
         savedOccurrence = await occurrencesApi.update(occurrenceToEdit.id, occurrenceData);
@@ -330,7 +331,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               Voltar
             </Button>
-            
+
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <FileText className="w-5 h-5 text-primary shrink-0" />
               <h1 className="text-lg font-bold text-foreground truncate">
@@ -343,7 +344,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse shrink-0"></div>
                 <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Progresso:</span>
                 <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden border border-border min-w-[100px]">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-secondary to-primary transition-all duration-300"
                     style={{ width: `${formProgress}%` }}
                   />
@@ -393,7 +394,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 />
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="endDateTime">Data/Hora Fim</Label>
               <Input
@@ -404,7 +405,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 className="mt-1.5"
               />
             </div>
-            
+
             <div>
               <Label className="mb-2 block">Origem do Chamado</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
@@ -420,7 +421,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 ))}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
               <div>
                 <Label htmlFor="cobradeCode">Código COBRADE</Label>
@@ -488,7 +489,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
                 <Label htmlFor="address">
@@ -524,7 +525,7 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
                 />
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="reference">Ponto de Referência</Label>
               <Input
@@ -820,15 +821,15 @@ export function OccurrenceForm({ onBack, onSave, occurrenceToEdit }: OccurrenceF
           <Button type="button" variant="outline" onClick={onBack} size="lg">
             Cancelar
           </Button>
-          <Button 
+          <Button
             type="submit"
             disabled={isLoading || formProgress < 100}
             size="lg"
-            
+
           >
             <Save className="w-4 h-4 mr-2" />
-            {isLoading 
-              ? (isEditMode ? "Atualizando..." : "Salvando...") 
+            {isLoading
+              ? (isEditMode ? "Atualizando..." : "Salvando...")
               : (isEditMode ? "Atualizar Ocorrência" : "Salvar Ocorrência")
             }
           </Button>

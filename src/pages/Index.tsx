@@ -62,7 +62,7 @@ const convertApiOccurrenceToDetails = (apiOccurrence: ApiOccurrence): Occurrence
     latitude: apiOccurrence.location?.latitude?.toString(),
     longitude: apiOccurrence.location?.longitude?.toString(),
     altitude: apiOccurrence.location?.altitude?.toString(),
-    origins: apiOccurrence.origins,
+    origins: apiOccurrence.origins as string[] | undefined,
     cobradeCode: apiOccurrence.cobradeCode,
     isConfidential: apiOccurrence.isConfidential,
     subcategory: apiOccurrence.subcategory,
@@ -184,8 +184,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <Header user={user} onLogout={handleLogout} onLogoClick={handleBackToDashboard}/>
-      
+      <Header user={user} onLogout={handleLogout} onLogoClick={handleBackToDashboard} />
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isLoadingOccurrence ? (
           <div className="flex flex-col items-center justify-center py-16">
@@ -195,22 +195,22 @@ const Index = () => {
         ) : (
           <>
             {currentView === "dashboard" && (
-              <Dashboard 
+              <Dashboard
                 onNewOccurrence={handleNewOccurrence}
                 onViewOccurrence={handleViewOccurrence}
                 refreshTrigger={refreshTrigger}
               />
             )}
-            
+
             {currentView === "new-occurrence" && (
-              <OccurrenceForm 
+              <OccurrenceForm
                 onBack={handleBackToDashboard}
                 onSave={handleSaveOccurrence}
               />
             )}
-            
+
             {currentView === "view-occurrence" && selectedOccurrence && (
-              <OccurrenceDetails 
+              <OccurrenceDetails
                 occurrence={selectedOccurrence}
                 onBack={handleBackToDashboard}
                 onEdit={handleEditOccurrence}
@@ -220,9 +220,9 @@ const Index = () => {
                 }}
               />
             )}
-            
+
             {currentView === "edit-occurrence" && selectedOccurrence && (
-              <OccurrenceForm 
+              <OccurrenceForm
                 onBack={() => setCurrentView("view-occurrence")}
                 onSave={handleUpdateOccurrence}
                 occurrenceToEdit={selectedOccurrence}
