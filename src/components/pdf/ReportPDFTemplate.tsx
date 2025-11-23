@@ -130,15 +130,15 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 10,
     left: 30,
     right: 30,
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
-    paddingTop: 10,
     textAlign: 'center',
     fontSize: 8,
     color: '#94a3b8',
+
   },
   chartContainer: {
     marginBottom: 20,
