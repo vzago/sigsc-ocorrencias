@@ -31,6 +31,8 @@
   
   # Copia a pasta dist gerada no estágio anterior
   COPY --from=builder /usr/src/app/dist ./dist
+
+  RUN ls -R dist
   
   # Usuário node por segurança (boa prática em containers)
   USER node
