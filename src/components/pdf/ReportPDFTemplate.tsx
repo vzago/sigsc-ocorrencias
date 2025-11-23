@@ -294,9 +294,9 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
         ))}
 
         {/* Footer */}
-        <Text style={styles.footer} fixed render={({ pageNumber, totalPages }) => (
+        {/* <Text style={styles.footer} fixed render={({ pageNumber, totalPages }) => (
           `Relatório gerado em ${new Date().toLocaleString('pt-BR')} - Página ${pageNumber} de ${totalPages}`
-        )} />
+        )} /> */}
       </Page>
     </Document>
   );

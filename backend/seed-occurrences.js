@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Configurações
 const API_URL = 'http://localhost:3000';
-const NUM_OCCURRENCES = 100;
+const NUM_OCCURRENCES = 50;
 
 // Enums
 const categories = ['vistoria_ambiental', 'risco_vegetacao', 'incendio_vegetacao', 'outras'];
