@@ -71,6 +71,9 @@ const convertApiOccurrence = (apiOccurrence: ApiOccurrence): OccurrenceDisplay =
     detailedReport: apiOccurrence.detailedReport,
     observations: apiOccurrence.observations,
     responsibleAgents: apiOccurrence.responsibleAgents,
+    startDateTimeIso: apiOccurrence.startDateTime
+      ? (typeof apiOccurrence.startDateTime === 'string' ? apiOccurrence.startDateTime : apiOccurrence.startDateTime.toISOString())
+      : new Date().toISOString(),
   };
 };
 
@@ -84,12 +87,13 @@ export const ReportsSection = () => {
 
   const loadOccurrences = useCallback(async () => {
     if (!startDate || !endDate) return;
-    
+
     setIsLoading(true);
     try {
+      // Send dates in ISO format (YYYY-MM-DD) which is correctly parsed by backend
       const response = await occurrencesApi.getAll({
-        startDate,
-        endDate,
+        startDate: startDate, // Already in YYYY-MM-DD format from input[type="date"]
+        endDate: endDate,     // Already in YYYY-MM-DD format from input[type="date"]
         limit: 10000,
       });
       const convertedOccurrences = Array.isArray(response.data)
@@ -124,10 +128,11 @@ export const ReportsSection = () => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); 
+    end.setHours(23, 59, 59, 999);
 
     return occurrences.filter(occurrence => {
-      const occurrenceDate = new Date(occurrence.dateTime);
+      if (!occurrence.startDateTimeIso) return false;
+      const occurrenceDate = new Date(occurrence.startDateTimeIso);
       return occurrenceDate >= start && occurrenceDate <= end;
     });
   }, [occurrences, startDate, endDate]);
@@ -222,8 +227,8 @@ export const ReportsSection = () => {
               />
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={handleGeneratePDF}
             disabled={isGenerating || isLoading || !startDate || !endDate}
             className="w-full"
@@ -290,7 +295,7 @@ export const ReportsSection = () => {
                   Total de Ocorrências
                 </div>
               </div>
-              
+
               <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
                 <div className="text-2xl font-bold text-primary">
                   {Object.keys(reportStats.occurrencesByCategory).length}
@@ -299,11 +304,11 @@ export const ReportsSection = () => {
                   Categorias Diferentes
                 </div>
               </div>
-              
+
               <div className="text-center p-4 bg-muted/50 rounded-lg border border-border/50">
                 <div className="text-2xl font-bold text-primary">
-                  {reportStats.startDate && reportStats.endDate ? 
-                    Math.ceil((new Date(reportStats.endDate).getTime() - new Date(reportStats.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 
+                  {reportStats.startDate && reportStats.endDate ?
+                    Math.ceil((new Date(reportStats.endDate).getTime() - new Date(reportStats.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 :
                     'N/A'
                   }
                 </div>

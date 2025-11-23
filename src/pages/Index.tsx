@@ -80,6 +80,7 @@ const convertApiOccurrenceToDetails = (apiOccurrence: ApiOccurrence): Occurrence
     detailedReport: apiOccurrence.detailedReport,
     observations: apiOccurrence.observations,
     responsibleAgents: apiOccurrence.responsibleAgents,
+    startDateTimeIso: typeof apiOccurrence.startDateTime === 'string' ? apiOccurrence.startDateTime : apiOccurrence.startDateTime.toISOString(),
   };
 };
 

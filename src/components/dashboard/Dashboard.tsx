@@ -81,6 +81,9 @@ const convertApiOccurrenceToDashboard = (apiOccurrence: ApiOccurrence): Occurren
     detailedReport: apiOccurrence.detailedReport,
     observations: apiOccurrence.observations,
     responsibleAgents: apiOccurrence.responsibleAgents,
+    startDateTimeIso: apiOccurrence.startDateTime
+      ? (typeof apiOccurrence.startDateTime === 'string' ? apiOccurrence.startDateTime : apiOccurrence.startDateTime.toISOString())
+      : new Date().toISOString(),
   };
 };
 
@@ -93,14 +96,14 @@ const categoryIcons = {
 
 const categoryLabels = {
   vistoria_ambiental: "Vistoria Ambiental",
-  risco_vegetacao: "Risco - Vegetação/Árvore", 
+  risco_vegetacao: "Risco - Vegetação/Árvore",
   incendio_vegetacao: "Incêndio em Vegetação",
   outras: "Outras Ocorrências"
 };
 
 const statusLabels = {
   aberta: "Aberta",
-  andamento: "Em Andamento", 
+  andamento: "Em Andamento",
   fechada: "Fechada"
 };
 
@@ -133,7 +136,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         occurrencesApi.getAll({ status: OccurrenceStatus.FECHADA, limit: 1 }),
         occurrencesApi.getAll({ limit: 1 }),
       ]);
-      
+
       setStats({
         total: totalRes.total,
         aberta: abertaRes.total,
@@ -154,7 +157,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
         page,
         limit,
       };
-      
+
       if (statusFilter !== "all") {
         filters.status = statusFilter as OccurrenceStatus;
       }
@@ -228,7 +231,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-destructive hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -257,7 +260,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-warning hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -286,7 +289,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-success hover:shadow-lg transition-shadow bg-card border border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -320,13 +323,13 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
       <Tabs defaultValue="dashboard" className="w-full">
         <div className="border-b-2 border-border/60 mb-8 bg-card/50 px-4 py-2 rounded-t-lg">
           <TabsList className="inline-flex h-14 items-center justify-start rounded-none bg-transparent p-0 w-auto gap-2">
-            <TabsTrigger 
+            <TabsTrigger
               value="dashboard"
               className="rounded-md border-0 bg-transparent px-8 py-3 text-base font-semibold text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
             >
               Painel de Ocorrências
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="reports"
               className="rounded-md border-0 bg-transparent px-8 py-3 text-base font-semibold text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
             >
@@ -334,7 +337,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
             </TabsTrigger>
           </TabsList>
         </div>
-        
+
         <TabsContent value="dashboard" className="space-y-6 mt-0">
           {/* Actions and Filters */}
           <Card className="shadow-sm bg-card border border-border/50">
@@ -344,7 +347,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                   <CardTitle className="text-xl">Registro de Ocorrências</CardTitle>
                   <CardDescription className="mt-1">Gerencie e acompanhe todas as ocorrências registradas</CardDescription>
                 </div>
-                <Button 
+                <Button
                   onClick={onNewOccurrence}
                   size="lg"
                   className="bg-gradient-to-r from-primary to-primary-variant hover:opacity-90 shadow-md"
@@ -354,7 +357,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                 </Button>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-6">
               <div className="flex flex-col gap-4">
                 <div className="flex-1">
@@ -371,7 +374,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
@@ -388,7 +391,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="category-filter" className="text-sm font-medium">Categoria</Label>
                     <Select value={categoryFilter} onValueChange={(value) => { setCategoryFilter(value); setPage(1); }}>
@@ -434,7 +437,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                           {occurrences.map((occurrence) => {
                             const CategoryIcon = categoryIcons[occurrence.category];
                             return (
-                              <TableRow 
+                              <TableRow
                                 key={occurrence.id}
                                 className="cursor-pointer hover:bg-muted/50"
                                 onClick={() => onViewOccurrence(occurrence)}
@@ -513,7 +516,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                         <Pagination>
                           <PaginationContent>
                             <PaginationItem>
-                              <PaginationPrevious 
+                              <PaginationPrevious
                                 onClick={() => page > 1 && handlePageChange(page - 1)}
                                 className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                               />
@@ -545,7 +548,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                               return null;
                             })}
                             <PaginationItem>
-                              <PaginationNext 
+                              <PaginationNext
                                 onClick={() => page < totalPages && handlePageChange(page + 1)}
                                 className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                               />
@@ -560,8 +563,8 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
                     <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                     <p className="text-lg font-medium text-foreground mb-1">Nenhuma ocorrência encontrada</p>
                     <p className="text-sm text-muted-foreground">
-                      {searchTerm || statusFilter !== "all" || categoryFilter !== "all" 
-                        ? "Tente ajustar os filtros de busca" 
+                      {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
+                        ? "Tente ajustar os filtros de busca"
                         : "Comece criando uma nova ocorrência"}
                     </p>
                   </div>
@@ -570,7 +573,7 @@ export function Dashboard({ onNewOccurrence, onViewOccurrence, refreshTrigger }:
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="reports" className="mt-0">
           <ReportsSection />
         </TabsContent>
