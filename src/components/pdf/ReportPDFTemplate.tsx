@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 10,
     color: '#64748b',
+    marginTop: 8,
   },
   period: {
     fontSize: 12,
@@ -63,6 +64,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 8,
     color: '#64748b',
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 12,
@@ -201,14 +203,11 @@ export const ReportPDFTemplate: React.FC<ReportPDFTemplateProps> = ({ reportData
             <Text style={{ fontSize: 8, marginBottom: 2, color: '#64748b' }}>
               {occ.address}{occ.reference ? ` - Ref: ${occ.reference}` : ''}
             </Text>
-            {occ.institution && (
-              <Text style={{ fontSize: 7, marginBottom: 2, color: '#64748b' }}>Instituição: {occ.institution}</Text>
-            )}
             {occ.origins && occ.origins.length > 0 && (
               <Text style={{ fontSize: 7, marginBottom: 2, color: '#64748b' }}>Origem: {occ.origins.join(', ')}</Text>
             )}
             <Text style={styles.occDesc}>
-              {occ.description}
+              Descrição: {occ.description}
             </Text>
             {occ.responsibleAgents && (
               <Text style={{ fontSize: 7, marginTop: 2, color: '#475569', fontWeight: 'bold' }}>Responsáveis: {occ.responsibleAgents}</Text>
