@@ -73,7 +73,7 @@ export const OccurrencePDFTemplate: React.FC<OccurrencePDFTemplateProps> = ({ oc
       <div className="flex items-center justify-between bg-slate-50 p-4 rounded-lg mb-8 border border-slate-200">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Status Atual:</span>
-          <Badge variant="outline" className="uppercase bg-white px-3 py-1">
+          <Badge variant="outline" className="uppercase bg-white px-3 py-1 h-auto self-center">
             {statusLabels[occurrence.status]}
           </Badge>
         </div>
@@ -245,7 +245,7 @@ export const OccurrencePDFTemplate: React.FC<OccurrencePDFTemplateProps> = ({ oc
       <div className="space-y-6 mb-8">
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-primary">Descrição da Ocorrência</h2>
-          <div className="bg-slate-50 px-4 py-3 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
+          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
             {occurrence.description}
           </div>
         </div>
@@ -253,7 +253,7 @@ export const OccurrencePDFTemplate: React.FC<OccurrencePDFTemplateProps> = ({ oc
         {occurrence.detailedReport && (
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-primary">Relato Detalhado</h2>
-            <div className="bg-slate-50 px-4 py-3 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
+            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
               {occurrence.detailedReport}
             </div>
           </div>
@@ -262,7 +262,7 @@ export const OccurrencePDFTemplate: React.FC<OccurrencePDFTemplateProps> = ({ oc
         {occurrence.observations && (
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-primary">Observações</h2>
-            <div className="bg-slate-50 px-4 py-3 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
+            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 text-sm text-justify leading-relaxed">
               {occurrence.observations}
             </div>
           </div>
