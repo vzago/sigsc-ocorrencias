@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# SIGSC - Sistema de Gestão de Ocorrências
 
-## Project info
+Bem-vindo ao **SIGSC - Ocorrências**, uma aplicação desenvolvida para facilitar o registro e a gestão de ocorrências. Este sistema permite que usuários reportem incidentes, acompanhem o status e permitam que administradores gerenciem as ocorrências de forma eficiente.
 
-**URL**: https://lovable.dev/projects/1c92ade4-9726-43b3-8ea0-adf6cd70e8ca
+## 📁 Estrutura do Projeto (Monorepo)
 
-## How can I edit this code?
+Este projeto segue uma estrutura de monorepo simplificada, contendo tanto o código do Frontend quanto do Backend no mesmo repositório.
 
-There are several ways of editing your application.
+- **Raiz (`/`)**: Contém o código do **Frontend**.
+  - Desenvolvido com **React**, **Vite**, **TypeScript**, **Tailwind CSS** e **Shadcn UI**.
+  - O código fonte do frontend está na pasta `./src`.
 
-**Use Lovable**
+- **Backend (`/backend`)**: Contém o código da **API**.
+  - Desenvolvido com **NestJS**.
+  - Responsável pela lógica de negócios, autenticação e integração com o **Firebase** (Firestore/Auth).
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1c92ade4-9726-43b3-8ea0-adf6cd70e8ca) and start prompting.
+## 🚀 Como Rodar o Projeto
 
-Changes made via Lovable will be committed automatically to this repo.
+Siga os passos abaixo para executar a aplicação localmente.
 
-**Use your preferred IDE**
+### Pré-requisitos
+- **Node.js**: Versão 18 ou superior.
+- **Service Account do Firebase**: Para o backend funcionar corretamente, você precisará configurar as credenciais do Firebase.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Configurando e Rodando o Backend
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+O backend deve ser iniciado primeiro para garantir que a API esteja disponível para o frontend.
 
-Follow these steps:
+1. Navegue até a pasta do backend:
+   ```bash
+   cd backend
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3. Configure as variáveis de ambiente:
+   - Crie um arquivo `.env` na pasta `backend`.
+   - Adicione as configurações do Firebase (exemplo de chaves necessárias):
+     ```env
+     # Exemplo de variáveis (NÃO USE ESTES VALORES REAIS)
+     FIREBASE_PROJECT_ID=seu-project-id
+     FIREBASE_CLIENT_EMAIL=seu-email-service-account
+     FIREBASE_PRIVATE_KEY="sua-private-key"
+     ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+4. Inicie o servidor:
+   ```bash
+   npm run start:dev
+   ```
+   > O servidor iniciará por padrão em `http://localhost:3000`.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### 2. Configurando e Rodando o Frontend
 
-**Edit a file directly in GitHub**
+Abra um novo terminal na **raiz do projeto** para rodar o frontend.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Instale as dependências:
+   ```bash
+   npm install
+   ```
 
-**Use GitHub Codespaces**
+2. (Opcional) Configure as variáveis de ambiente:
+   - O frontend espera que o backend esteja na porta 3000 por padrão.
+   - Caso precise alterar, crie um arquivo `.env` na raiz:
+     ```env
+     VITE_API_URL=http://localhost:3000
+     ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. Inicie a aplicação:
+   ```bash
+   npm run dev
+   ```
+   > A aplicação estará disponível em `http://localhost:5173` (ou outra porta indicada no terminal).
 
-## What technologies are used for this project?
+## 👥 Créditos
 
-This project is built with:
+Este projeto foi desenvolvido pelos seguintes alunos:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/1c92ade4-9726-43b3-8ea0-adf6cd70e8ca) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- **Arthur Moreira Correa**
+- **Eduardo Ribeiro Rodrigues**
+- **Murilo Genghi Rossi**
+- **Vinicius Moraes de Paiva**
+- **Vitor Zago**
